@@ -36,11 +36,19 @@ export default async function ConversationPage({
         <Link href="/messages" className="text-brand-green-dark" aria-label="Retour aux messages">
           ←
         </Link>
-        <h1 className="font-semibold text-brand-ink">
+        <h1 className="flex-1 font-semibold text-brand-ink">
           {data.otherParticipant
             ? `${data.otherParticipant.first_name} ${data.otherParticipant.last_name}`
             : "Conversation"}
         </h1>
+        {data.otherParticipant ? (
+          <Link
+            href={`/messages/${id}/avis`}
+            className="shrink-0 text-xs font-semibold text-brand-green-dark"
+          >
+            Laisser un avis
+          </Link>
+        ) : null}
       </div>
 
       <MessageThread

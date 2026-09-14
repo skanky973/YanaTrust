@@ -185,6 +185,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      reviews: {
+        Row: {
+          id: string;
+          provider_id: string;
+          author_id: string;
+          rating: number;
+          comment: string | null;
+          punctuality: number | null;
+          quality: number | null;
+          communication: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          provider_id: string;
+          author_id: string;
+          rating: number;
+          comment?: string | null;
+          punctuality?: number | null;
+          quality?: number | null;
+          communication?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          provider_id?: string;
+          author_id?: string;
+          rating?: number;
+          comment?: string | null;
+          punctuality?: number | null;
+          quality?: number | null;
+          communication?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -208,3 +247,5 @@ export type ServiceRequestUpdate =
 
 export type Conversation = Database["public"]["Tables"]["conversations"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];
+
+export type Review = Database["public"]["Tables"]["reviews"]["Row"];

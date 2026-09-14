@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/profiles/queries";
+import { getProviderRatingSummary } from "@/lib/reviews/queries";
+import { RatingBadge } from "@/components/reviews/RatingBadge";
 import { LinkButton } from "@/components/ui/Button";
 import { SignOutButton } from "@/components/layout/SignOutButton";
 
@@ -20,6 +22,10 @@ export default async function ProfilPage() {
     redirect("/connexion?suivant=/profil");
   }
 
+  const ratingSummary = profile.is_provider
+    ? await getProviderRatingSummary(profile.id)
+    : null;
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex items-center gap-4">
@@ -34,9 +40,12 @@ export default async function ProfilPage() {
             {profile.city || "Ville non renseignée"}
           </p>
           {profile.is_provider ? (
-            <span className="mt-1 inline-block rounded-full bg-brand-gold/30 px-2 py-0.5 text-xs font-semibold text-brand-green-dark">
-              Prestataire
-            </span>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="inline-block rounded-full bg-brand-gold/30 px-2 py-0.5 text-xs font-semibold text-brand-green-dark">
+                Prestataire
+              </span>
+              {ratingSummary ? <RatingBadge summary={ratingSummary} /> : null}
+            </div>
           ) : null}
         </div>
       </div>

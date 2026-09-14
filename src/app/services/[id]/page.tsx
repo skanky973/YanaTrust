@@ -6,6 +6,9 @@ import { getCategoryLabel } from "@/lib/services/categories";
 import { createClient } from "@/lib/supabase/server";
 import { startConversationWithUser } from "@/lib/actions/conversations";
 import { Button } from "@/components/ui/Button";
+import { getProviderRatingSummary, getProviderReviews } from "@/lib/reviews/queries";
+import { RatingBadge } from "@/components/reviews/RatingBadge";
+import { ReviewList } from "@/components/reviews/ReviewList";
 
 export async function generateMetadata({
   params,
@@ -34,6 +37,10 @@ export default async function ServicePage({
     data: { user },
   } = await supabase.auth.getUser();
   const canContact = !!user && user.id !== service.provider_id;
+  const [ratingSummary, reviews] = await Promise.all([
+    getProviderRatingSummary(service.provider_id),
+    getProviderReviews(service.provider_id),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
@@ -78,6 +85,12 @@ export default async function ServicePage({
               : "—"}
           </dd>
         </div>
+        <div className="flex justify-between">
+          <dt className="text-brand-ink/60">Note</dt>
+          <dd>
+            <RatingBadge summary={ratingSummary} />
+          </dd>
+        </div>
       </dl>
 
       {canContact ? (
@@ -94,6 +107,13 @@ export default async function ServicePage({
           Se connecter pour contacter ce prestataire
         </Link>
       ) : null}
+
+      <div>
+        <h2 className="mb-3 text-lg font-semibold text-brand-ink">
+          Avis sur ce prestataire
+        </h2>
+        <ReviewList reviews={reviews} />
+      </div>
 
       <Link
         href="/recherche"

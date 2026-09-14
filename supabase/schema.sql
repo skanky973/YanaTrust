@@ -433,3 +433,102 @@ begin
 exception
   when duplicate_object then null;
 end $$;
+
+-- ============================================================================
+-- Phase 5 : Avis
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- Table: reviews
+-- Un avis = une note laissée par un utilisateur (author) à un autre
+-- (provider). La note moyenne d'un prestataire se calcule en agrégeant ces
+-- lignes (pas de colonne dénormalisée à maintenir).
+-- ----------------------------------------------------------------------------
+create table if not exists public.reviews (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.profiles (id) on delete cascade,
+  author_id uuid not null references public.profiles (id) on delete cascade,
+  rating smallint not null,
+  comment text,
+  punctuality smallint,
+  quality smallint,
+  communication smallint,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint reviews_distinct_people check (provider_id <> author_id),
+  constraint reviews_rating_range check (rating between 1 and 5),
+  constraint reviews_punctuality_range check (punctuality is null or punctuality between 1 and 5),
+  constraint reviews_quality_range check (quality is null or quality between 1 and 5),
+  constraint reviews_communication_range check (communication is null or communication between 1 and 5),
+  constraint reviews_comment_length check (comment is null or char_length(comment) <= 2000),
+  unique (provider_id, author_id)
+);
+
+comment on table public.reviews is 'Avis laissé par un utilisateur (author_id) à propos d''un autre (provider_id).';
+
+create index if not exists reviews_provider_id_idx on public.reviews (provider_id);
+
+-- ----------------------------------------------------------------------------
+-- Trigger: updated_at automatique
+-- ----------------------------------------------------------------------------
+create or replace function public.handle_review_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists before_review_update on public.reviews;
+create trigger before_review_update
+  before update on public.reviews
+  for each row execute function public.handle_review_update();
+
+-- ----------------------------------------------------------------------------
+-- Row Level Security
+-- ----------------------------------------------------------------------------
+alter table public.reviews enable row level security;
+
+-- Les avis sont publics (ils aident les autres utilisateurs à choisir un
+-- prestataire de confiance).
+drop policy if exists "Reviews are viewable by everyone" on public.reviews;
+create policy "Reviews are viewable by everyone"
+  on public.reviews for select
+  using (true);
+
+-- On ne peut laisser un avis qu'en son propre nom, et uniquement à quelqu'un
+-- avec qui on a déjà échangé au moins une conversation : ça empêche les avis
+-- totalement arbitraires sans relation préalable entre les utilisateurs.
+drop policy if exists "Users can review people they have messaged" on public.reviews;
+create policy "Users can review people they have messaged"
+  on public.reviews for insert
+  with check (
+    author_id = auth.uid()
+    and exists (
+      select 1 from public.conversations c
+      where (c.participant_one = auth.uid() and c.participant_two = provider_id)
+         or (c.participant_two = auth.uid() and c.participant_one = provider_id)
+    )
+  );
+
+drop policy if exists "Users can update own reviews" on public.reviews;
+create policy "Users can update own reviews"
+  on public.reviews for update
+  using (author_id = auth.uid())
+  with check (
+    author_id = auth.uid()
+    and exists (
+      select 1 from public.conversations c
+      where (c.participant_one = auth.uid() and c.participant_two = provider_id)
+         or (c.participant_two = auth.uid() and c.participant_one = provider_id)
+    )
+  );
+
+drop policy if exists "Users can delete own reviews" on public.reviews;
+create policy "Users can delete own reviews"
+  on public.reviews for delete
+  using (author_id = auth.uid());
