@@ -25,7 +25,32 @@ export function EditServiceForm({
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      {photos.length > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-brand-ink">
+            Photos actuelles
+          </span>
+          <div className="grid grid-cols-4 gap-2">
+            {photos.map((photo) => (
+              <div key={photo.id} className="relative aspect-square">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photo.url}
+                  alt=""
+                  className="h-full w-full rounded-lg object-cover"
+                />
+                <DeleteServicePhotoButton
+                  photoId={photo.id}
+                  serviceId={service.id}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <form action={formAction} className="flex flex-col gap-4">
       {state.error ? <Alert>{state.error}</Alert> : null}
 
       <TextField
@@ -92,30 +117,6 @@ export function EditServiceForm({
         error={state.fieldErrors?.serviceArea?.[0]}
       />
 
-      {photos.length > 0 ? (
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium text-brand-ink">
-            Photos actuelles
-          </span>
-          <div className="grid grid-cols-4 gap-2">
-            {photos.map((photo) => (
-              <div key={photo.id} className="relative aspect-square">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photo.url}
-                  alt=""
-                  className="h-full w-full rounded-lg object-cover"
-                />
-                <DeleteServicePhotoButton
-                  photoId={photo.id}
-                  serviceId={service.id}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
       {photos.length < 4 ? (
         <div className="flex flex-col gap-1.5">
           <label htmlFor="photos" className="text-sm font-medium text-brand-ink">
@@ -136,6 +137,7 @@ export function EditServiceForm({
       <SubmitButton pendingLabel="Enregistrement...">
         Enregistrer
       </SubmitButton>
-    </form>
+      </form>
+    </div>
   );
 }
