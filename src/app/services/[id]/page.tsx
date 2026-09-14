@@ -3,6 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getServiceById } from "@/lib/services/queries";
 import { getCategoryLabel } from "@/lib/services/categories";
+import { createClient } from "@/lib/supabase/server";
+import { startConversationWithUser } from "@/lib/actions/conversations";
+import { Button } from "@/components/ui/Button";
 
 export async function generateMetadata({
   params,
@@ -25,6 +28,12 @@ export default async function ServicePage({
   if (!service || service.status !== "active") {
     notFound();
   }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const canContact = !!user && user.id !== service.provider_id;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
@@ -70,6 +79,21 @@ export default async function ServicePage({
           </dd>
         </div>
       </dl>
+
+      {canContact ? (
+        <form action={startConversationWithUser.bind(null, service.provider_id)}>
+          <Button type="submit" variant="primary" className="w-full">
+            Contacter ce prestataire
+          </Button>
+        </form>
+      ) : !user ? (
+        <Link
+          href={`/connexion?suivant=/services/${service.id}`}
+          className="text-center text-sm font-semibold text-brand-green-dark"
+        >
+          Se connecter pour contacter ce prestataire
+        </Link>
+      ) : null}
 
       <Link
         href="/recherche"

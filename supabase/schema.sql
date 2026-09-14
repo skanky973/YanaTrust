@@ -317,3 +317,119 @@ drop policy if exists "Users can delete own requests" on public.requests;
 create policy "Users can delete own requests"
   on public.requests for delete
   using (client_id = auth.uid());
+
+-- ============================================================================
+-- Phase 4 : Messagerie
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- Table: conversations
+-- Une conversation = un fil privé entre exactement deux utilisateurs. L'index
+-- unique normalise la paire (least/greatest) pour empêcher deux conversations
+-- entre les deux mêmes personnes.
+-- ----------------------------------------------------------------------------
+create table if not exists public.conversations (
+  id uuid primary key default gen_random_uuid(),
+  participant_one uuid not null references public.profiles (id) on delete cascade,
+  participant_two uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint conversations_distinct_participants check (participant_one <> participant_two)
+);
+
+create unique index if not exists conversations_participants_unique_idx
+  on public.conversations (least(participant_one, participant_two), greatest(participant_one, participant_two));
+
+create index if not exists conversations_participant_one_idx on public.conversations (participant_one);
+create index if not exists conversations_participant_two_idx on public.conversations (participant_two);
+
+-- ----------------------------------------------------------------------------
+-- Table: messages
+-- ----------------------------------------------------------------------------
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.conversations (id) on delete cascade,
+  sender_id uuid not null references public.profiles (id) on delete cascade,
+  content text not null,
+  created_at timestamptz not null default now(),
+  constraint messages_content_length check (char_length(content) between 1 and 4000)
+);
+
+create index if not exists messages_conversation_id_created_at_idx
+  on public.messages (conversation_id, created_at);
+
+-- ----------------------------------------------------------------------------
+-- Trigger: fait remonter la conversation en tête de liste à chaque message
+-- ----------------------------------------------------------------------------
+create or replace function public.handle_new_message()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.conversations set updated_at = now() where id = new.conversation_id;
+  return new;
+end;
+$$;
+
+drop trigger if exists after_message_insert on public.messages;
+create trigger after_message_insert
+  after insert on public.messages
+  for each row execute function public.handle_new_message();
+
+-- ----------------------------------------------------------------------------
+-- Row Level Security
+-- ----------------------------------------------------------------------------
+alter table public.conversations enable row level security;
+
+-- Seuls les deux participants peuvent voir la conversation.
+drop policy if exists "Participants can view their conversations" on public.conversations;
+create policy "Participants can view their conversations"
+  on public.conversations for select
+  using (auth.uid() = participant_one or auth.uid() = participant_two);
+
+-- On ne peut créer une conversation qu'en y étant soi-même participant.
+drop policy if exists "Users can create conversations they participate in" on public.conversations;
+create policy "Users can create conversations they participate in"
+  on public.conversations for insert
+  with check (auth.uid() = participant_one or auth.uid() = participant_two);
+
+alter table public.messages enable row level security;
+
+-- Un message n'est lisible que par les participants de sa conversation :
+-- c'est la garantie qu'une conversation n'est jamais exposée à un tiers.
+drop policy if exists "Participants can view messages in their conversations" on public.messages;
+create policy "Participants can view messages in their conversations"
+  on public.messages for select
+  using (
+    exists (
+      select 1 from public.conversations c
+      where c.id = conversation_id
+        and (c.participant_one = auth.uid() or c.participant_two = auth.uid())
+    )
+  );
+
+-- On ne peut envoyer un message qu'en son propre nom, et uniquement dans une
+-- conversation dont on fait partie.
+drop policy if exists "Participants can send messages in their conversations" on public.messages;
+create policy "Participants can send messages in their conversations"
+  on public.messages for insert
+  with check (
+    sender_id = auth.uid()
+    and exists (
+      select 1 from public.conversations c
+      where c.id = conversation_id
+        and (c.participant_one = auth.uid() or c.participant_two = auth.uid())
+    )
+  );
+
+-- ----------------------------------------------------------------------------
+-- Realtime : diffuse les nouveaux messages en direct aux participants
+-- ----------------------------------------------------------------------------
+do $$
+begin
+  execute 'alter publication supabase_realtime add table public.messages';
+exception
+  when duplicate_object then null;
+end $$;

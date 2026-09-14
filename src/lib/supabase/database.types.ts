@@ -137,6 +137,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      conversations: {
+        Row: {
+          id: string;
+          participant_one: string;
+          participant_two: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          participant_one: string;
+          participant_two: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          participant_one?: string;
+          participant_two?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          content: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          content: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          sender_id?: string;
+          content?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -157,3 +205,6 @@ export type ServiceRequestInsert =
   Database["public"]["Tables"]["requests"]["Insert"];
 export type ServiceRequestUpdate =
   Database["public"]["Tables"]["requests"]["Update"];
+
+export type Conversation = Database["public"]["Tables"]["conversations"]["Row"];
+export type Message = Database["public"]["Tables"]["messages"]["Row"];
