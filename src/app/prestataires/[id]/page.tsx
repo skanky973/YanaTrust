@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BadgeCheck } from "lucide-react";
 import { getProfileById } from "@/lib/profiles/queries";
 import { getActiveServicesByProvider } from "@/lib/services/queries";
 import { getProviderRatingSummary, getProviderReviews } from "@/lib/reviews/queries";
+import { getProviderTrustScore } from "@/lib/trust/queries";
 import { createClient } from "@/lib/supabase/server";
 import { startConversationWithUser } from "@/lib/actions/conversations";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +14,7 @@ import { ReviewList } from "@/components/reviews/ReviewList";
 import { FavoriteProviderButton } from "@/components/favorites/FavoriteProviderButton";
 import { ReportButton } from "@/components/reports/ReportButton";
 import { ServiceCard } from "@/components/services/ServiceCard";
+import { TrustScoreBadge } from "@/components/trust/TrustScoreBadge";
 
 function initials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "?";
@@ -49,10 +52,11 @@ export default async function PrestatairePage({
   } = await supabase.auth.getUser();
   const canContact = !!user && user.id !== profile.id;
 
-  const [ratingSummary, reviews, services] = await Promise.all([
+  const [ratingSummary, reviews, services, trustScore] = await Promise.all([
     getProviderRatingSummary(profile.id),
     getProviderReviews(profile.id),
     getActiveServicesByProvider(profile.id),
+    getProviderTrustScore(profile.id),
   ]);
 
   return (
@@ -62,15 +66,25 @@ export default async function PrestatairePage({
           {initials(profile.first_name, profile.last_name)}
         </div>
         <div>
-          <h1 className="text-xl font-bold text-brand-ink">
-            {profile.first_name} {profile.last_name}
-          </h1>
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-xl font-bold text-brand-ink">
+              {profile.first_name} {profile.last_name}
+            </h1>
+            {profile.identity_verified ? (
+              <BadgeCheck
+                className="h-5 w-5 text-brand-green"
+                aria-label="Identité vérifiée"
+              />
+            ) : null}
+          </div>
           <p className="text-sm text-brand-ink/70">
             {profile.city || "Ville non renseignée"}
           </p>
           <RatingBadge summary={ratingSummary} />
         </div>
       </div>
+
+      <TrustScoreBadge score={trustScore} />
 
       {profile.bio ? (
         <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm text-brand-ink/80">

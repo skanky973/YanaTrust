@@ -1,16 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BadgeCheck } from "lucide-react";
 import { getServiceById, getServicePhotos } from "@/lib/services/queries";
 import { getCategoryLabel } from "@/lib/services/categories";
+import { getProfileById } from "@/lib/profiles/queries";
 import { createClient } from "@/lib/supabase/server";
 import { startConversationWithUser } from "@/lib/actions/conversations";
 import { Button } from "@/components/ui/Button";
 import { getProviderRatingSummary, getProviderReviews } from "@/lib/reviews/queries";
+import { getProviderTrustScore } from "@/lib/trust/queries";
 import { RatingBadge } from "@/components/reviews/RatingBadge";
 import { ReviewList } from "@/components/reviews/ReviewList";
 import { FavoriteServiceButton } from "@/components/favorites/FavoriteServiceButton";
 import { ReportButton } from "@/components/reports/ReportButton";
+import { TrustScoreBadge } from "@/components/trust/TrustScoreBadge";
+
+function initials(firstName: string, lastName: string) {
+  return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "?";
+}
 
 export async function generateMetadata({
   params,
@@ -39,11 +47,14 @@ export default async function ServicePage({
     data: { user },
   } = await supabase.auth.getUser();
   const canContact = !!user && user.id !== service.provider_id;
-  const [ratingSummary, reviews, photos] = await Promise.all([
-    getProviderRatingSummary(service.provider_id),
-    getProviderReviews(service.provider_id),
-    getServicePhotos(service.id),
-  ]);
+  const [ratingSummary, reviews, photos, providerProfile, trustScore] =
+    await Promise.all([
+      getProviderRatingSummary(service.provider_id),
+      getProviderReviews(service.provider_id),
+      getServicePhotos(service.id),
+      getProfileById(service.provider_id),
+      getProviderTrustScore(service.provider_id),
+    ]);
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
@@ -75,6 +86,35 @@ export default async function ServicePage({
         ) : null}
       </div>
 
+      <Link
+        href={`/prestataires/${service.provider_id}`}
+        className="flex items-center gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-4"
+      >
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-green-dark text-sm font-bold text-brand-cream">
+          {providerProfile
+            ? initials(providerProfile.first_name, providerProfile.last_name)
+            : "?"}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="truncate font-semibold text-brand-ink">
+              {service.provider
+                ? `${service.provider.first_name} ${service.provider.last_name}`
+                : "—"}
+            </p>
+            {providerProfile?.identity_verified ? (
+              <BadgeCheck
+                className="h-4 w-4 shrink-0 text-brand-green"
+                aria-label="Identité vérifiée"
+              />
+            ) : null}
+          </div>
+          <RatingBadge summary={ratingSummary} />
+        </div>
+      </Link>
+
+      <TrustScoreBadge score={trustScore} size="sm" />
+
       <p className="whitespace-pre-line rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm text-brand-ink/80">
         {service.description}
       </p>
@@ -94,31 +134,12 @@ export default async function ServicePage({
             </dd>
           </div>
         ) : null}
-        <div className="flex justify-between">
-          <dt className="text-brand-ink/60">Prestataire</dt>
-          <dd className="font-medium text-brand-ink">
-            <Link
-              href={`/prestataires/${service.provider_id}`}
-              className="text-brand-green-dark underline"
-            >
-              {service.provider
-                ? `${service.provider.first_name} ${service.provider.last_name}`
-                : "—"}
-            </Link>
-          </dd>
-        </div>
-        <div className="flex justify-between">
-          <dt className="text-brand-ink/60">Note</dt>
-          <dd>
-            <RatingBadge summary={ratingSummary} />
-          </dd>
-        </div>
       </dl>
 
       {canContact ? (
         <form action={startConversationWithUser.bind(null, service.provider_id)}>
           <Button type="submit" variant="primary" className="w-full">
-            Contacter ce prestataire
+            Demander ce service
           </Button>
         </form>
       ) : !user ? (

@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import {
+  BadgeCheck,
+  ChevronRight,
+  Pencil,
+  Wrench,
+  ClipboardList,
+  Heart,
+} from "lucide-react";
 import { getCurrentProfile } from "@/lib/profiles/queries";
 import { getProviderRatingSummary } from "@/lib/reviews/queries";
+import { getProviderTrustScore } from "@/lib/trust/queries";
+import { createClient } from "@/lib/supabase/server";
 import { RatingBadge } from "@/components/reviews/RatingBadge";
-import { LinkButton } from "@/components/ui/Button";
+import { TrustScoreBadge } from "@/components/trust/TrustScoreBadge";
 import { SignOutButton } from "@/components/layout/SignOutButton";
 
 export const metadata: Metadata = {
@@ -15,6 +25,13 @@ function initials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "?";
 }
 
+const MENU_ITEMS = [
+  { href: "/profil/modifier", label: "Modifier mon profil", icon: Pencil },
+  { href: "/mes-services", label: "Mes services", icon: Wrench },
+  { href: "/mes-demandes", label: "Mes demandes", icon: ClipboardList },
+  { href: "/favoris", label: "Mes favoris", icon: Heart },
+];
+
 export default async function ProfilPage() {
   const profile = await getCurrentProfile();
 
@@ -22,9 +39,17 @@ export default async function ProfilPage() {
     redirect("/connexion?suivant=/profil");
   }
 
-  const ratingSummary = profile.is_provider
-    ? await getProviderRatingSummary(profile.id)
-    : null;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const [ratingSummary, trustScore] = profile.is_provider
+    ? await Promise.all([
+        getProviderRatingSummary(profile.id),
+        getProviderTrustScore(profile.id),
+      ])
+    : [null, null];
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
@@ -33,14 +58,22 @@ export default async function ProfilPage() {
           {initials(profile.first_name, profile.last_name)}
         </div>
         <div>
-          <h1 className="text-xl font-bold text-brand-ink">
-            {profile.first_name} {profile.last_name}
-          </h1>
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-xl font-bold text-brand-ink">
+              {profile.first_name} {profile.last_name}
+            </h1>
+            {profile.identity_verified ? (
+              <BadgeCheck
+                className="h-5 w-5 text-brand-green"
+                aria-label="Identité vérifiée"
+              />
+            ) : null}
+          </div>
           <p className="text-sm text-brand-ink/70">
             {profile.city || "Ville non renseignée"}
           </p>
           {profile.is_provider ? (
-            <div className="mt-1 flex items-center gap-2">
+            <div className="mt-1 flex flex-wrap items-center gap-2">
               <span className="inline-block rounded-full bg-brand-gold/30 px-2 py-0.5 text-xs font-semibold text-brand-green-dark">
                 Prestataire
               </span>
@@ -49,6 +82,8 @@ export default async function ProfilPage() {
           ) : null}
         </div>
       </div>
+
+      {trustScore !== null ? <TrustScoreBadge score={trustScore} /> : null}
 
       {profile.bio ? (
         <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm text-brand-ink/80">
@@ -66,35 +101,37 @@ export default async function ProfilPage() {
             ) : null}
           </dd>
         </div>
+        {user?.email ? (
+          <div className="flex justify-between">
+            <dt className="text-brand-ink/60">E-mail</dt>
+            <dd className="font-medium text-brand-ink">{user.email}</dd>
+          </div>
+        ) : null}
         <div className="flex justify-between">
           <dt className="text-brand-ink/60">Zone d&rsquo;intervention</dt>
           <dd className="font-medium text-brand-ink">
             {profile.service_area || "—"}
           </dd>
         </div>
-        <div className="flex justify-between">
-          <dt className="text-brand-ink/60">Identité vérifiée</dt>
-          <dd className="font-medium text-brand-ink">
-            {profile.identity_verified ? "Oui" : "Non"}
-          </dd>
-        </div>
       </dl>
 
-      <div className="flex flex-col gap-3">
-        <LinkButton href="/profil/modifier" variant="primary">
-          Modifier mon profil
-        </LinkButton>
-        <LinkButton href="/mes-services" variant="ghost">
-          Mes services
-        </LinkButton>
-        <LinkButton href="/mes-demandes" variant="ghost">
-          Mes demandes
-        </LinkButton>
-        <LinkButton href="/favoris" variant="ghost">
-          Mes favoris
-        </LinkButton>
-        <SignOutButton />
-      </div>
+      <nav className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm shadow-black/5">
+        {MENU_ITEMS.map(({ href, label, icon: Icon }, i) => (
+          <Link
+            key={href}
+            href={href}
+            className={`flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-brand-ink ${
+              i > 0 ? "border-t border-brand-ink/8" : ""
+            }`}
+          >
+            <Icon className="h-5 w-5 text-brand-green-dark" aria-hidden="true" />
+            <span className="flex-1">{label}</span>
+            <ChevronRight className="h-4 w-4 text-brand-ink/30" aria-hidden="true" />
+          </Link>
+        ))}
+      </nav>
+
+      <SignOutButton />
 
       <p className="text-center text-xs text-brand-ink/50">
         Membre depuis le{" "}
