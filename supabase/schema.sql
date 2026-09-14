@@ -120,3 +120,102 @@ create policy "Users can update own profile"
 -- Aucune policy INSERT/DELETE pour le rôle "authenticated" : la création
 -- passe uniquement par le trigger handle_new_user (security definer), ce qui
 -- empêche la création de profils arbitraires ou orphelins.
+
+-- ============================================================================
+-- Phase 2 : Services
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- Table: services
+-- Un service = une offre publiée par un prestataire (profiles.id).
+-- ----------------------------------------------------------------------------
+create table if not exists public.services (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.profiles (id) on delete cascade,
+  title text not null,
+  category text not null,
+  description text not null default '',
+  price_from numeric(10, 2),
+  city text,
+  service_area text,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint services_title_length check (char_length(title) between 1 and 150),
+  constraint services_description_length check (char_length(description) <= 3000),
+  constraint services_price_nonnegative check (price_from is null or price_from >= 0),
+  constraint services_status_valid check (status in ('active', 'archived')),
+  constraint services_category_valid check (
+    category in (
+      'menage',
+      'bricolage',
+      'jardinage',
+      'demenagement',
+      'reparation',
+      'beaute_bien_etre',
+      'cours_particuliers',
+      'transport',
+      'evenementiel',
+      'autre'
+    )
+  )
+);
+
+comment on table public.services is 'Offre de service publiée par un prestataire.';
+comment on column public.services.status is '''active'' (visible publiquement) ou ''archived'' (masqué, visible du seul propriétaire).';
+
+create index if not exists services_provider_id_idx on public.services (provider_id);
+create index if not exists services_status_idx on public.services (status);
+create index if not exists services_category_idx on public.services (category);
+create index if not exists services_city_idx on public.services (city);
+
+-- ----------------------------------------------------------------------------
+-- Trigger: updated_at automatique
+-- ----------------------------------------------------------------------------
+create or replace function public.handle_service_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists before_service_update on public.services;
+create trigger before_service_update
+  before update on public.services
+  for each row execute function public.handle_service_update();
+
+-- ----------------------------------------------------------------------------
+-- Row Level Security
+-- ----------------------------------------------------------------------------
+alter table public.services enable row level security;
+
+-- Les services actifs sont visibles par tous ; un prestataire voit aussi ses
+-- propres services archivés (pour pouvoir les gérer).
+drop policy if exists "Active services are viewable by everyone" on public.services;
+create policy "Active services are viewable by everyone"
+  on public.services for select
+  using (status = 'active' or provider_id = auth.uid());
+
+-- Un utilisateur ne peut créer un service qu'en son propre nom.
+drop policy if exists "Users can insert own services" on public.services;
+create policy "Users can insert own services"
+  on public.services for insert
+  with check (provider_id = auth.uid());
+
+-- Un utilisateur ne peut modifier que ses propres services.
+drop policy if exists "Users can update own services" on public.services;
+create policy "Users can update own services"
+  on public.services for update
+  using (provider_id = auth.uid())
+  with check (provider_id = auth.uid());
+
+-- Un utilisateur ne peut supprimer que ses propres services.
+drop policy if exists "Users can delete own services" on public.services;
+create policy "Users can delete own services"
+  on public.services for delete
+  using (provider_id = auth.uid());

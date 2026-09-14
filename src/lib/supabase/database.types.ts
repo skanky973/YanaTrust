@@ -53,6 +53,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      services: {
+        Row: {
+          id: string;
+          provider_id: string;
+          title: string;
+          category: string;
+          description: string;
+          price_from: number | null;
+          city: string | null;
+          service_area: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          provider_id: string;
+          title: string;
+          category: string;
+          description?: string;
+          price_from?: number | null;
+          city?: string | null;
+          service_area?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          provider_id?: string;
+          title?: string;
+          category?: string;
+          description?: string;
+          price_from?: number | null;
+          city?: string | null;
+          service_area?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -63,3 +105,7 @@ export type Database = {
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
+
+export type Service = Database["public"]["Tables"]["services"]["Row"];
+export type ServiceInsert = Database["public"]["Tables"]["services"]["Insert"];
+export type ServiceUpdate = Database["public"]["Tables"]["services"]["Update"];

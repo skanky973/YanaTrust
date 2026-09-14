@@ -75,6 +75,9 @@ export default async function ProfilPage() {
         <LinkButton href="/profil/modifier" variant="primary">
           Modifier mon profil
         </LinkButton>
+        <LinkButton href="/mes-services" variant="ghost">
+          Mes services
+        </LinkButton>
         <SignOutButton />
       </div>
 
