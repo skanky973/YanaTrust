@@ -10,10 +10,25 @@ export const metadata: Metadata = {
 export default async function RecherchePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; categorie?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    categorie?: string;
+    ville?: string;
+    prixMin?: string;
+    prixMax?: string;
+    noteMin?: string;
+  }>;
 }) {
-  const { q, categorie } = await searchParams;
-  const services = await getActiveServices({ search: q, category: categorie });
+  const { q, categorie, ville, prixMin, prixMax, noteMin } = await searchParams;
+
+  const services = await getActiveServices({
+    search: q,
+    category: categorie,
+    city: ville,
+    minPrice: prixMin ? Number(prixMin) : undefined,
+    maxPrice: prixMax ? Number(prixMax) : undefined,
+    minRating: noteMin ? Number(noteMin) : undefined,
+  });
   const coverPhotos = await getCoverPhotoByService(services.map((s) => s.id));
 
   return (
@@ -42,6 +57,77 @@ export default async function RecherchePage({
             </option>
           ))}
         </select>
+
+        <details className="rounded-xl bg-white" open={!!(ville || prixMin || prixMax || noteMin)}>
+          <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-brand-green-dark">
+            Filtres avancés (ville, prix, note)
+          </summary>
+          <div className="flex flex-col gap-3 px-4 pb-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="ville" className="text-sm font-medium text-brand-ink">
+                Ville
+              </label>
+              <input
+                id="ville"
+                type="text"
+                name="ville"
+                defaultValue={ville}
+                placeholder="Ex : Saint-Laurent-du-Maroni"
+                className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="prixMin" className="text-sm font-medium text-brand-ink">
+                  Prix min (€)
+                </label>
+                <input
+                  id="prixMin"
+                  type="number"
+                  name="prixMin"
+                  min="0"
+                  step="0.01"
+                  defaultValue={prixMin}
+                  className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="prixMax" className="text-sm font-medium text-brand-ink">
+                  Prix max (€)
+                </label>
+                <input
+                  id="prixMax"
+                  type="number"
+                  name="prixMax"
+                  min="0"
+                  step="0.01"
+                  defaultValue={prixMax}
+                  className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="noteMin" className="text-sm font-medium text-brand-ink">
+                Note minimale du prestataire
+              </label>
+              <select
+                id="noteMin"
+                name="noteMin"
+                defaultValue={noteMin ?? ""}
+                className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+              >
+                <option value="">Toutes les notes</option>
+                <option value="4">4 étoiles et plus</option>
+                <option value="3">3 étoiles et plus</option>
+                <option value="2">2 étoiles et plus</option>
+                <option value="1">1 étoile et plus</option>
+              </select>
+            </div>
+          </div>
+        </details>
+
         <button
           type="submit"
           className="rounded-xl bg-brand-green-dark px-4 py-3 text-sm font-semibold text-brand-cream"
