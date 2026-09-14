@@ -12,7 +12,7 @@ export function ServiceCard({
   return (
     <Link
       href={`/services/${service.id}`}
-      className="flex gap-3 rounded-xl bg-white p-4"
+      className="flex gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-4"
     >
       {coverPhotoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element

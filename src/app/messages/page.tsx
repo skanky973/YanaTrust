@@ -32,7 +32,7 @@ export default async function MessagesPage() {
       <h1 className="text-2xl font-bold text-brand-green-dark">Messages</h1>
 
       {conversations.length === 0 ? (
-        <p className="rounded-xl bg-white p-6 text-center text-sm text-brand-ink/60">
+        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/60">
           Aucune conversation pour le moment. Contactez un prestataire depuis
           la page d&rsquo;un service pour démarrer une discussion.
         </p>
@@ -42,7 +42,7 @@ export default async function MessagesPage() {
             <Link
               key={conversation.id}
               href={`/messages/${conversation.id}`}
-              className="flex items-center justify-between gap-3 rounded-xl bg-white p-4"
+              className="flex items-center justify-between gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-4"
             >
               <div className="min-w-0">
                 <p className="font-semibold text-brand-ink">

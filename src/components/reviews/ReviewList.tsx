@@ -3,7 +3,7 @@ import type { ReviewWithAuthor } from "@/lib/reviews/queries";
 export function ReviewList({ reviews }: { reviews: ReviewWithAuthor[] }) {
   if (reviews.length === 0) {
     return (
-      <p className="rounded-xl bg-white p-4 text-center text-sm text-brand-ink/50">
+      <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/50">
         Aucun avis pour le moment.
       </p>
     );
@@ -12,7 +12,7 @@ export function ReviewList({ reviews }: { reviews: ReviewWithAuthor[] }) {
   return (
     <div className="flex flex-col gap-3">
       {reviews.map((review) => (
-        <div key={review.id} className="rounded-xl bg-white p-4">
+        <div key={review.id} className="rounded-xl bg-white shadow-sm shadow-black/5 p-4">
           <div className="flex items-center justify-between">
             <p className="font-semibold text-brand-ink">
               {review.author

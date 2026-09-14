@@ -58,9 +58,15 @@ export default async function RecherchePage({
           ))}
         </select>
 
-        <details className="rounded-xl bg-white" open={!!(ville || prixMin || prixMax || noteMin)}>
-          <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-brand-green-dark">
+        <details className="group rounded-xl bg-white shadow-sm shadow-black/5" open={!!(ville || prixMin || prixMax || noteMin)}>
+          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-brand-green-dark [&::-webkit-details-marker]:hidden">
             Filtres avancés (ville, prix, note)
+            <span
+              aria-hidden="true"
+              className="text-brand-green-dark/50 transition-transform group-open:rotate-180"
+            >
+              ⌄
+            </span>
           </summary>
           <div className="flex flex-col gap-3 px-4 pb-4">
             <div className="flex flex-col gap-1.5">
@@ -137,7 +143,7 @@ export default async function RecherchePage({
       </form>
 
       {services.length === 0 ? (
-        <p className="rounded-xl bg-white p-6 text-center text-sm text-brand-ink/60">
+        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/60">
           Aucun service ne correspond à votre recherche pour le moment.
         </p>
       ) : (

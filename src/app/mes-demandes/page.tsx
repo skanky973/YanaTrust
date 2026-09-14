@@ -37,7 +37,7 @@ export default async function MesDemandesPage() {
       </div>
 
       {requests.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl bg-white p-8 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-8 text-center">
           <p className="text-sm text-brand-ink/60">
             Vous n&rsquo;avez encore publié aucune demande.
           </p>
