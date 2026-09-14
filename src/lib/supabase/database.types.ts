@@ -95,6 +95,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      requests: {
+        Row: {
+          id: string;
+          client_id: string;
+          title: string;
+          category: string;
+          description: string;
+          budget: number | null;
+          city: string | null;
+          desired_date: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          client_id: string;
+          title: string;
+          category: string;
+          description?: string;
+          budget?: number | null;
+          city?: string | null;
+          desired_date?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          client_id?: string;
+          title?: string;
+          category?: string;
+          description?: string;
+          budget?: number | null;
+          city?: string | null;
+          desired_date?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -109,3 +151,9 @@ export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 export type Service = Database["public"]["Tables"]["services"]["Row"];
 export type ServiceInsert = Database["public"]["Tables"]["services"]["Insert"];
 export type ServiceUpdate = Database["public"]["Tables"]["services"]["Update"];
+
+export type ServiceRequest = Database["public"]["Tables"]["requests"]["Row"];
+export type ServiceRequestInsert =
+  Database["public"]["Tables"]["requests"]["Insert"];
+export type ServiceRequestUpdate =
+  Database["public"]["Tables"]["requests"]["Update"];

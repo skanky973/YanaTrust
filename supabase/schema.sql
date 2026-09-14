@@ -219,3 +219,101 @@ drop policy if exists "Users can delete own services" on public.services;
 create policy "Users can delete own services"
   on public.services for delete
   using (provider_id = auth.uid());
+
+-- ============================================================================
+-- Phase 3 : Demandes de service
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- Table: requests
+-- Une demande = un besoin publié par un client (profiles.id).
+-- Aucune page publique ne liste les demandes pour l'instant : seul l'auteur
+-- y a accès (la mise en relation se fera via la messagerie, phase suivante).
+-- ----------------------------------------------------------------------------
+create table if not exists public.requests (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.profiles (id) on delete cascade,
+  title text not null,
+  category text not null,
+  description text not null default '',
+  budget numeric(10, 2),
+  city text,
+  desired_date date,
+  status text not null default 'open',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint requests_title_length check (char_length(title) between 1 and 150),
+  constraint requests_description_length check (char_length(description) <= 3000),
+  constraint requests_budget_nonnegative check (budget is null or budget >= 0),
+  constraint requests_status_valid check (
+    status in ('open', 'in_discussion', 'completed', 'cancelled')
+  ),
+  constraint requests_category_valid check (
+    category in (
+      'menage',
+      'bricolage',
+      'jardinage',
+      'demenagement',
+      'reparation',
+      'beaute_bien_etre',
+      'cours_particuliers',
+      'transport',
+      'evenementiel',
+      'autre'
+    )
+  )
+);
+
+comment on table public.requests is 'Demande de service publiée par un client.';
+
+create index if not exists requests_client_id_idx on public.requests (client_id);
+create index if not exists requests_status_idx on public.requests (status);
+
+-- ----------------------------------------------------------------------------
+-- Trigger: updated_at automatique
+-- ----------------------------------------------------------------------------
+create or replace function public.handle_request_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists before_request_update on public.requests;
+create trigger before_request_update
+  before update on public.requests
+  for each row execute function public.handle_request_update();
+
+-- ----------------------------------------------------------------------------
+-- Row Level Security
+-- ----------------------------------------------------------------------------
+alter table public.requests enable row level security;
+
+-- Seul l'auteur peut voir ses propres demandes (pas de page publique pour
+-- l'instant : la découverte des demandes par les prestataires viendra avec
+-- la messagerie/recherche avancée).
+drop policy if exists "Users can view own requests" on public.requests;
+create policy "Users can view own requests"
+  on public.requests for select
+  using (client_id = auth.uid());
+
+drop policy if exists "Users can insert own requests" on public.requests;
+create policy "Users can insert own requests"
+  on public.requests for insert
+  with check (client_id = auth.uid());
+
+drop policy if exists "Users can update own requests" on public.requests;
+create policy "Users can update own requests"
+  on public.requests for update
+  using (client_id = auth.uid())
+  with check (client_id = auth.uid());
+
+drop policy if exists "Users can delete own requests" on public.requests;
+create policy "Users can delete own requests"
+  on public.requests for delete
+  using (client_id = auth.uid());

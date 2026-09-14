@@ -16,14 +16,9 @@ export default function PublierPage() {
         Proposer un service
       </LinkButton>
 
-      <div className="flex flex-col items-center gap-2 rounded-xl bg-white p-6 text-center">
-        <p className="text-sm text-brand-ink/60">
-          Publier une demande de service arrive bientôt.
-        </p>
-        <span className="rounded-full bg-brand-gold/30 px-3 py-1 text-xs font-semibold text-brand-green-dark">
-          Bientôt disponible
-        </span>
-      </div>
+      <LinkButton href="/publier/demande" variant="secondary">
+        Publier une demande
+      </LinkButton>
     </div>
   );
 }
