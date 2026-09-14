@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getServicePhotos } from "@/lib/services/queries";
 import { EditServiceForm } from "@/components/services/EditServiceForm";
 
 export const metadata: Metadata = {
@@ -33,13 +34,15 @@ export default async function ModifierServicePage({
     notFound();
   }
 
+  const photos = await getServicePhotos(service.id);
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
       <h1 className="text-2xl font-bold text-brand-green-dark">
         Modifier le service
       </h1>
 
-      <EditServiceForm service={service} />
+      <EditServiceForm service={service} photos={photos} />
     </div>
   );
 }

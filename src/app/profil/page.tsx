@@ -90,6 +90,9 @@ export default async function ProfilPage() {
         <LinkButton href="/mes-demandes" variant="ghost">
           Mes demandes
         </LinkButton>
+        <LinkButton href="/favoris" variant="ghost">
+          Mes favoris
+        </LinkButton>
         <SignOutButton />
       </div>
 

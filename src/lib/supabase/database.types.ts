@@ -224,6 +224,88 @@ export type Database = {
         };
         Relationships: [];
       };
+      favorite_providers: {
+        Row: { user_id: string; provider_id: string; created_at: string };
+        Insert: {
+          user_id: string;
+          provider_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          provider_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      favorite_services: {
+        Row: { user_id: string; service_id: string; created_at: string };
+        Insert: {
+          user_id: string;
+          service_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          service_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      reports: {
+        Row: {
+          id: string;
+          reporter_id: string;
+          target_type: string;
+          target_id: string;
+          reason: string;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter_id: string;
+          target_type: string;
+          target_id: string;
+          reason: string;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          reporter_id?: string;
+          target_type?: string;
+          target_id?: string;
+          reason?: string;
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      service_photos: {
+        Row: {
+          id: string;
+          service_id: string;
+          path: string;
+          url: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          service_id: string;
+          path: string;
+          url: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          service_id?: string;
+          path?: string;
+          url?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -249,3 +331,6 @@ export type Conversation = Database["public"]["Tables"]["conversations"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];
 
 export type Review = Database["public"]["Tables"]["reviews"]["Row"];
+
+export type Report = Database["public"]["Tables"]["reports"]["Row"];
+export type ServicePhoto = Database["public"]["Tables"]["service_photos"]["Row"];

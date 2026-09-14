@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Service } from "@/lib/supabase/database.types";
+import type { Service, ServicePhoto } from "@/lib/supabase/database.types";
 
 export type ServiceWithProvider = Service & {
   provider: {
@@ -82,4 +82,68 @@ export async function getMyServices(): Promise<Service[]> {
   }
 
   return data;
+}
+
+export async function getActiveServicesByProvider(
+  providerId: string,
+): Promise<Service[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("services")
+    .select("*")
+    .eq("provider_id", providerId)
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("getActiveServicesByProvider:", error.message);
+    return [];
+  }
+
+  return data;
+}
+
+export async function getServicePhotos(
+  serviceId: string,
+): Promise<ServicePhoto[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("service_photos")
+    .select("*")
+    .eq("service_id", serviceId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("getServicePhotos:", error.message);
+    return [];
+  }
+
+  return data;
+}
+
+export async function getCoverPhotoByService(
+  serviceIds: string[],
+): Promise<Map<string, string>> {
+  if (serviceIds.length === 0) return new Map();
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("service_photos")
+    .select("service_id, url, created_at")
+    .in("service_id", serviceIds)
+    .order("created_at", { ascending: true });
+
+  if (error || !data) {
+    if (error) console.error("getCoverPhotoByService:", error.message);
+    return new Map();
+  }
+
+  const coverByService = new Map<string, string>();
+  for (const photo of data) {
+    if (!coverByService.has(photo.service_id)) {
+      coverByService.set(photo.service_id, photo.url);
+    }
+  }
+
+  return coverByService;
 }

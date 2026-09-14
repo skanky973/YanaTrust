@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { sendMessage } from "@/app/messages/[id]/actions";
 import { INITIAL_ACTION_STATE } from "@/lib/actions/action-state";
+import { ReportButton } from "@/components/reports/ReportButton";
 import type { Message } from "@/lib/supabase/database.types";
 
 function formatTime(timestamp: string) {
@@ -88,6 +89,14 @@ export function MessageThread({
                 >
                   {formatTime(message.created_at)}
                 </p>
+                {!isOwn ? (
+                  <ReportButton
+                    targetType="message"
+                    targetId={message.id}
+                    label="Signaler"
+                    className="mt-1"
+                  />
+                ) : null}
               </div>
             );
           })

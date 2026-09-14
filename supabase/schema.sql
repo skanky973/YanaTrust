@@ -532,3 +532,136 @@ drop policy if exists "Users can delete own reviews" on public.reviews;
 create policy "Users can delete own reviews"
   on public.reviews for delete
   using (author_id = auth.uid());
+
+-- ============================================================================
+-- Phase 6 : Favoris, signalement/modération, photos de services
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- Favoris
+-- ----------------------------------------------------------------------------
+create table if not exists public.favorite_providers (
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  provider_id uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, provider_id),
+  constraint favorite_providers_not_self check (user_id <> provider_id)
+);
+
+create table if not exists public.favorite_services (
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  service_id uuid not null references public.services (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, service_id)
+);
+
+alter table public.favorite_providers enable row level security;
+drop policy if exists "Users manage their own favorite providers" on public.favorite_providers;
+create policy "Users manage their own favorite providers"
+  on public.favorite_providers for all
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+alter table public.favorite_services enable row level security;
+drop policy if exists "Users manage their own favorite services" on public.favorite_services;
+create policy "Users manage their own favorite services"
+  on public.favorite_services for all
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+-- ----------------------------------------------------------------------------
+-- Signalement / modération
+-- Base simple pour un futur back-office administrateur : pas de lecture ni de
+-- traitement des signalements par les utilisateurs eux-mêmes, seulement la
+-- création. target_id n'a pas de contrainte de clé étrangère (il pointe vers
+-- profiles, services ou messages selon target_type).
+-- ----------------------------------------------------------------------------
+create table if not exists public.reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null references public.profiles (id) on delete cascade,
+  target_type text not null,
+  target_id uuid not null,
+  reason text not null,
+  status text not null default 'pending',
+  created_at timestamptz not null default now(),
+  constraint reports_target_type_valid check (target_type in ('profile', 'service', 'message')),
+  constraint reports_status_valid check (status in ('pending', 'reviewed', 'dismissed')),
+  constraint reports_reason_length check (char_length(reason) between 1 and 1000)
+);
+
+create index if not exists reports_status_idx on public.reports (status);
+create index if not exists reports_target_idx on public.reports (target_type, target_id);
+
+alter table public.reports enable row level security;
+
+drop policy if exists "Users can create reports" on public.reports;
+create policy "Users can create reports"
+  on public.reports for insert
+  with check (reporter_id = auth.uid());
+
+drop policy if exists "Users can view own reports" on public.reports;
+create policy "Users can view own reports"
+  on public.reports for select
+  using (reporter_id = auth.uid());
+
+-- ----------------------------------------------------------------------------
+-- Photos de services
+-- ----------------------------------------------------------------------------
+create table if not exists public.service_photos (
+  id uuid primary key default gen_random_uuid(),
+  service_id uuid not null references public.services (id) on delete cascade,
+  path text not null,
+  url text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists service_photos_service_id_idx on public.service_photos (service_id);
+
+alter table public.service_photos enable row level security;
+
+drop policy if exists "Service photos are viewable by everyone" on public.service_photos;
+create policy "Service photos are viewable by everyone"
+  on public.service_photos for select
+  using (true);
+
+drop policy if exists "Providers can add photos to own services" on public.service_photos;
+create policy "Providers can add photos to own services"
+  on public.service_photos for insert
+  with check (
+    exists (
+      select 1 from public.services s
+      where s.id = service_id and s.provider_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Providers can delete photos of own services" on public.service_photos;
+create policy "Providers can delete photos of own services"
+  on public.service_photos for delete
+  using (
+    exists (
+      select 1 from public.services s
+      where s.id = service_id and s.provider_id = auth.uid()
+    )
+  );
+
+-- Bucket de stockage public pour les photos de services (lecture publique,
+-- écriture réservée aux utilisateurs authentifiés, suppression réservée au
+-- propriétaire du fichier).
+insert into storage.buckets (id, name, public)
+values ('service-photos', 'service-photos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "Public read access to service photos" on storage.objects;
+create policy "Public read access to service photos"
+  on storage.objects for select
+  using (bucket_id = 'service-photos');
+
+drop policy if exists "Authenticated users can upload service photos" on storage.objects;
+create policy "Authenticated users can upload service photos"
+  on storage.objects for insert
+  with check (bucket_id = 'service-photos' and auth.role() = 'authenticated');
+
+drop policy if exists "Owners can delete their service photos" on storage.objects;
+create policy "Owners can delete their service photos"
+  on storage.objects for delete
+  using (bucket_id = 'service-photos' and owner = auth.uid());
