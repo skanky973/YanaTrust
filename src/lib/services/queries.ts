@@ -21,7 +21,7 @@ export async function getActiveServices({
 
   let query = supabase
     .from("services")
-    .select("*, provider:profiles(first_name, last_name, city)")
+    .select("*, provider:profiles!services_provider_id_fkey(first_name, last_name, city)")
     .eq("status", "active")
     .order("created_at", { ascending: false });
 
@@ -50,7 +50,7 @@ export async function getServiceById(
 
   const { data, error } = await supabase
     .from("services")
-    .select("*, provider:profiles(first_name, last_name, city)")
+    .select("*, provider:profiles!services_provider_id_fkey(first_name, last_name, city)")
     .eq("id", id)
     .single();
 
