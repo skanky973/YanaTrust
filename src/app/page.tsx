@@ -40,6 +40,10 @@ export default async function AccueilPage() {
         )}
       </div>
 
+      <p className="-mt-4 text-sm text-brand-ink/60">
+        Les services d&rsquo;ici, en toute confiance.
+      </p>
+
       <p className="flex items-center gap-1 text-sm text-brand-ink/60">
         <MapPin className="h-4 w-4 text-brand-green" aria-hidden="true" />
         Saint-Laurent-du-Maroni, Guyane
