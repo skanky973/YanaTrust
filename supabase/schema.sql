@@ -665,3 +665,378 @@ drop policy if exists "Owners can delete their service photos" on storage.object
 create policy "Owners can delete their service photos"
   on storage.objects for delete
   using (bucket_id = 'service-photos' and owner = auth.uid());
+
+-- ============================================================================
+-- Phase 7 : Planning prestataire (interventions)
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- Table: interventions
+-- Une intervention planifiée entre un prestataire et un client, avec cycle de
+-- vie complet (demande -> confirmation -> réalisation -> validation client).
+-- ----------------------------------------------------------------------------
+create table if not exists public.interventions (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid references public.requests (id) on delete set null,
+  service_id uuid references public.services (id) on delete set null,
+  provider_id uuid not null references public.profiles (id) on delete cascade,
+  client_id uuid not null references public.profiles (id) on delete cascade,
+  title text not null,
+  category text not null,
+  description text not null default '',
+  address text,
+  client_phone text,
+  scheduled_date date not null,
+  start_time time not null,
+  duration_minutes integer not null default 60,
+  price numeric(10, 2),
+  final_price numeric(10, 2),
+  status text not null default 'new_request',
+  provider_note text,
+  work_notes text,
+  materials_used text,
+  needs_followup boolean not null default false,
+  client_validated_at timestamptz,
+  client_reported_problem boolean not null default false,
+  client_comment text,
+  client_rating smallint,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint interventions_distinct_people check (provider_id <> client_id),
+  constraint interventions_duration_positive check (duration_minutes > 0),
+  constraint interventions_status_valid check (
+    status in (
+      'new_request', 'pending_confirmation', 'confirmed', 'scheduled',
+      'on_the_way', 'in_progress', 'completed', 'validated', 'cancelled'
+    )
+  ),
+  constraint interventions_category_valid check (
+    category in (
+      'menage', 'bricolage', 'jardinage', 'demenagement', 'reparation',
+      'beaute_bien_etre', 'cours_particuliers', 'transport', 'evenementiel', 'autre'
+    )
+  ),
+  constraint interventions_client_rating_range check (
+    client_rating is null or client_rating between 1 and 5
+  )
+);
+
+comment on table public.interventions is 'Intervention planifiée entre un prestataire et un client, avec suivi de statut.';
+
+create index if not exists interventions_provider_id_idx on public.interventions (provider_id);
+create index if not exists interventions_client_id_idx on public.interventions (client_id);
+create index if not exists interventions_status_idx on public.interventions (status);
+create index if not exists interventions_scheduled_date_idx on public.interventions (scheduled_date);
+
+-- ----------------------------------------------------------------------------
+-- Trigger: protège les champs selon qui modifie (client vs prestataire) et
+-- maintient updated_at. Le client ne peut agir que sur la validation finale.
+-- ----------------------------------------------------------------------------
+create or replace function public.protect_intervention_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.provider_id := old.provider_id;
+  new.client_id := old.client_id;
+
+  if auth.uid() = old.client_id and auth.uid() <> old.provider_id then
+    new.title := old.title;
+    new.category := old.category;
+    new.description := old.description;
+    new.address := old.address;
+    new.client_phone := old.client_phone;
+    new.scheduled_date := old.scheduled_date;
+    new.start_time := old.start_time;
+    new.duration_minutes := old.duration_minutes;
+    new.price := old.price;
+    new.final_price := old.final_price;
+    new.provider_note := old.provider_note;
+    new.work_notes := old.work_notes;
+    new.materials_used := old.materials_used;
+    new.needs_followup := old.needs_followup;
+
+    if not (old.status = 'completed' and new.status = 'validated') then
+      new.status := old.status;
+    end if;
+  end if;
+
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists before_intervention_update on public.interventions;
+create trigger before_intervention_update
+  before update on public.interventions
+  for each row execute function public.protect_intervention_fields();
+
+-- ----------------------------------------------------------------------------
+-- Table: intervention_status_history
+-- Historique immuable des changements de statut, alimenté automatiquement.
+-- ----------------------------------------------------------------------------
+create table if not exists public.intervention_status_history (
+  id uuid primary key default gen_random_uuid(),
+  intervention_id uuid not null references public.interventions (id) on delete cascade,
+  from_status text,
+  to_status text not null,
+  changed_by uuid references public.profiles (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists intervention_status_history_intervention_id_idx
+  on public.intervention_status_history (intervention_id, created_at);
+
+create or replace function public.log_intervention_status_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (tg_op = 'INSERT') or (new.status is distinct from old.status) then
+    insert into public.intervention_status_history (intervention_id, from_status, to_status, changed_by)
+    values (new.id, case when tg_op = 'INSERT' then null else old.status end, new.status, auth.uid());
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists after_intervention_status_change on public.interventions;
+create trigger after_intervention_status_change
+  after insert or update on public.interventions
+  for each row execute function public.log_intervention_status_change();
+
+-- ----------------------------------------------------------------------------
+-- Table: intervention_photos (avant / après)
+-- ----------------------------------------------------------------------------
+create table if not exists public.intervention_photos (
+  id uuid primary key default gen_random_uuid(),
+  intervention_id uuid not null references public.interventions (id) on delete cascade,
+  type text not null,
+  path text not null,
+  created_at timestamptz not null default now(),
+  constraint intervention_photos_type_valid check (type in ('before', 'after'))
+);
+
+create index if not exists intervention_photos_intervention_id_idx
+  on public.intervention_photos (intervention_id);
+
+-- ----------------------------------------------------------------------------
+-- Disponibilités du prestataire
+-- ----------------------------------------------------------------------------
+create table if not exists public.provider_weekly_availability (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.profiles (id) on delete cascade,
+  day_of_week smallint not null,
+  start_time time not null,
+  end_time time not null,
+  constraint provider_weekly_availability_day_valid check (day_of_week between 0 and 6),
+  constraint provider_weekly_availability_time_order check (end_time > start_time)
+);
+
+create index if not exists provider_weekly_availability_provider_id_idx
+  on public.provider_weekly_availability (provider_id);
+
+create table if not exists public.provider_unavailable_dates (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.profiles (id) on delete cascade,
+  date date not null,
+  reason text,
+  created_at timestamptz not null default now(),
+  unique (provider_id, date)
+);
+
+create index if not exists provider_unavailable_dates_provider_id_idx
+  on public.provider_unavailable_dates (provider_id);
+
+-- ----------------------------------------------------------------------------
+-- Table: notifications
+-- ----------------------------------------------------------------------------
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  type text not null,
+  title text not null,
+  body text,
+  intervention_id uuid references public.interventions (id) on delete cascade,
+  read boolean not null default false,
+  created_at timestamptz not null default now(),
+  constraint notifications_type_valid check (
+    type in (
+      'new_request', 'request_accepted', 'appointment_changed', 'upcoming_intervention',
+      'cancelled', 'completed', 'validation_requested', 'client_validated', 'client_problem'
+    )
+  )
+);
+
+create index if not exists notifications_user_id_idx on public.notifications (user_id, created_at);
+
+-- ----------------------------------------------------------------------------
+-- Row Level Security
+-- ----------------------------------------------------------------------------
+alter table public.interventions enable row level security;
+
+drop policy if exists "Participants can view their interventions" on public.interventions;
+create policy "Participants can view their interventions"
+  on public.interventions for select
+  using (provider_id = auth.uid() or client_id = auth.uid());
+
+drop policy if exists "Provider or client can create interventions" on public.interventions;
+create policy "Provider or client can create interventions"
+  on public.interventions for insert
+  with check (provider_id = auth.uid() or client_id = auth.uid());
+
+drop policy if exists "Participants can update their interventions" on public.interventions;
+create policy "Participants can update their interventions"
+  on public.interventions for update
+  using (provider_id = auth.uid() or client_id = auth.uid())
+  with check (provider_id = auth.uid() or client_id = auth.uid());
+
+drop policy if exists "Provider can delete own interventions" on public.interventions;
+create policy "Provider can delete own interventions"
+  on public.interventions for delete
+  using (provider_id = auth.uid());
+
+alter table public.intervention_status_history enable row level security;
+
+drop policy if exists "Participants can view status history" on public.intervention_status_history;
+create policy "Participants can view status history"
+  on public.intervention_status_history for select
+  using (
+    exists (
+      select 1 from public.interventions i
+      where i.id = intervention_id
+        and (i.provider_id = auth.uid() or i.client_id = auth.uid())
+    )
+  );
+
+alter table public.intervention_photos enable row level security;
+
+drop policy if exists "Participants can view intervention photos" on public.intervention_photos;
+create policy "Participants can view intervention photos"
+  on public.intervention_photos for select
+  using (
+    exists (
+      select 1 from public.interventions i
+      where i.id = intervention_id
+        and (i.provider_id = auth.uid() or i.client_id = auth.uid())
+    )
+  );
+
+drop policy if exists "Provider can add intervention photos" on public.intervention_photos;
+create policy "Provider can add intervention photos"
+  on public.intervention_photos for insert
+  with check (
+    exists (
+      select 1 from public.interventions i
+      where i.id = intervention_id and i.provider_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Provider can delete intervention photos" on public.intervention_photos;
+create policy "Provider can delete intervention photos"
+  on public.intervention_photos for delete
+  using (
+    exists (
+      select 1 from public.interventions i
+      where i.id = intervention_id and i.provider_id = auth.uid()
+    )
+  );
+
+alter table public.provider_weekly_availability enable row level security;
+
+drop policy if exists "Availability is viewable by everyone" on public.provider_weekly_availability;
+create policy "Availability is viewable by everyone"
+  on public.provider_weekly_availability for select
+  using (true);
+
+drop policy if exists "Providers manage their own availability" on public.provider_weekly_availability;
+create policy "Providers manage their own availability"
+  on public.provider_weekly_availability for all
+  using (provider_id = auth.uid())
+  with check (provider_id = auth.uid());
+
+alter table public.provider_unavailable_dates enable row level security;
+
+drop policy if exists "Unavailable dates are viewable by everyone" on public.provider_unavailable_dates;
+create policy "Unavailable dates are viewable by everyone"
+  on public.provider_unavailable_dates for select
+  using (true);
+
+drop policy if exists "Providers manage their own unavailable dates" on public.provider_unavailable_dates;
+create policy "Providers manage their own unavailable dates"
+  on public.provider_unavailable_dates for all
+  using (provider_id = auth.uid())
+  with check (provider_id = auth.uid());
+
+alter table public.notifications enable row level security;
+
+drop policy if exists "Users can view own notifications" on public.notifications;
+create policy "Users can view own notifications"
+  on public.notifications for select
+  using (user_id = auth.uid());
+
+drop policy if exists "Users can update own notifications" on public.notifications;
+create policy "Users can update own notifications"
+  on public.notifications for update
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+drop policy if exists "Participants can create notifications for their interventions" on public.notifications;
+create policy "Participants can create notifications for their interventions"
+  on public.notifications for insert
+  with check (
+    intervention_id is not null
+    and exists (
+      select 1 from public.interventions i
+      where i.id = intervention_id
+        and (i.provider_id = auth.uid() or i.client_id = auth.uid())
+    )
+  );
+
+-- ----------------------------------------------------------------------------
+-- Bucket de stockage privé pour les photos d'intervention (contrairement aux
+-- photos de service, ce ne sont pas des données publiques : elles montrent le
+-- domicile/bien du client). Accès restreint aux deux participants via le
+-- premier segment du chemin, qui doit être l'id de l'intervention.
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('intervention-photos', 'intervention-photos', false)
+on conflict (id) do nothing;
+
+drop policy if exists "Participants can read intervention photos" on storage.objects;
+create policy "Participants can read intervention photos"
+  on storage.objects for select
+  using (
+    bucket_id = 'intervention-photos'
+    and exists (
+      select 1 from public.interventions i
+      where i.id::text = (storage.foldername(name))[1]
+        and (i.provider_id = auth.uid() or i.client_id = auth.uid())
+    )
+  );
+
+drop policy if exists "Provider can upload intervention photos" on storage.objects;
+create policy "Provider can upload intervention photos"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'intervention-photos'
+    and exists (
+      select 1 from public.interventions i
+      where i.id::text = (storage.foldername(name))[1] and i.provider_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Provider can delete intervention photos from storage" on storage.objects;
+create policy "Provider can delete intervention photos from storage"
+  on storage.objects for delete
+  using (
+    bucket_id = 'intervention-photos'
+    and exists (
+      select 1 from public.interventions i
+      where i.id::text = (storage.foldername(name))[1] and i.provider_id = auth.uid()
+    )
+  );

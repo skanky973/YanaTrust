@@ -8,6 +8,8 @@ const PROTECTED_PREFIXES = [
   "/favoris",
   "/mes-services",
   "/mes-demandes",
+  "/planning",
+  "/notifications",
 ];
 
 function isProtectedPath(pathname: string) {

@@ -8,10 +8,12 @@ import {
   Wrench,
   ClipboardList,
   Heart,
+  Calendar,
 } from "lucide-react";
 import { getCurrentProfile } from "@/lib/profiles/queries";
 import { getProviderRatingSummary } from "@/lib/reviews/queries";
 import { getProviderTrustScore } from "@/lib/trust/queries";
+import { getInterventionsAwaitingMyValidation } from "@/lib/interventions/queries";
 import { createClient } from "@/lib/supabase/server";
 import { RatingBadge } from "@/components/reviews/RatingBadge";
 import { TrustScoreBadge } from "@/components/trust/TrustScoreBadge";
@@ -24,13 +26,6 @@ export const metadata: Metadata = {
 function initials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "?";
 }
-
-const MENU_ITEMS = [
-  { href: "/profil/modifier", label: "Modifier mon profil", icon: Pencil },
-  { href: "/mes-services", label: "Mes services", icon: Wrench },
-  { href: "/mes-demandes", label: "Mes demandes", icon: ClipboardList },
-  { href: "/favoris", label: "Mes favoris", icon: Heart },
-];
 
 export default async function ProfilPage() {
   const profile = await getCurrentProfile();
@@ -50,6 +45,18 @@ export default async function ProfilPage() {
         getProviderTrustScore(profile.id),
       ])
     : [null, null];
+
+  const awaitingValidation = await getInterventionsAwaitingMyValidation();
+
+  const menuItems = [
+    ...(profile.is_provider
+      ? [{ href: "/planning", label: "Mon planning", icon: Calendar }]
+      : []),
+    { href: "/profil/modifier", label: "Modifier mon profil", icon: Pencil },
+    { href: "/mes-services", label: "Mes services", icon: Wrench },
+    { href: "/mes-demandes", label: "Mes demandes", icon: ClipboardList },
+    { href: "/favoris", label: "Mes favoris", icon: Heart },
+  ];
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
@@ -115,8 +122,26 @@ export default async function ProfilPage() {
         </div>
       </dl>
 
+      {awaitingValidation.length > 0 ? (
+        <div className="flex flex-col gap-2 rounded-xl bg-brand-gold/15 p-4">
+          <p className="text-sm font-semibold text-brand-green-dark">
+            {awaitingValidation.length} intervention
+            {awaitingValidation.length > 1 ? "s" : ""} en attente de votre validation
+          </p>
+          {awaitingValidation.map((i) => (
+            <Link
+              key={i.id}
+              href={`/planning/${i.id}`}
+              className="text-sm text-brand-ink underline"
+            >
+              {i.title} — {i.provider ? `${i.provider.first_name} ${i.provider.last_name}` : ""}
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
       <nav className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm shadow-black/5">
-        {MENU_ITEMS.map(({ href, label, icon: Icon }, i) => (
+        {menuItems.map(({ href, label, icon: Icon }, i) => (
           <Link
             key={href}
             href={href}

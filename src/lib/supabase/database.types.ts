@@ -306,6 +306,225 @@ export type Database = {
         };
         Relationships: [];
       };
+      interventions: {
+        Row: {
+          id: string;
+          request_id: string | null;
+          service_id: string | null;
+          provider_id: string;
+          client_id: string;
+          title: string;
+          category: string;
+          description: string;
+          address: string | null;
+          client_phone: string | null;
+          scheduled_date: string;
+          start_time: string;
+          duration_minutes: number;
+          price: number | null;
+          final_price: number | null;
+          status: string;
+          provider_note: string | null;
+          work_notes: string | null;
+          materials_used: string | null;
+          needs_followup: boolean;
+          client_validated_at: string | null;
+          client_reported_problem: boolean;
+          client_comment: string | null;
+          client_rating: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          request_id?: string | null;
+          service_id?: string | null;
+          provider_id: string;
+          client_id: string;
+          title: string;
+          category: string;
+          description?: string;
+          address?: string | null;
+          client_phone?: string | null;
+          scheduled_date: string;
+          start_time: string;
+          duration_minutes?: number;
+          price?: number | null;
+          final_price?: number | null;
+          status?: string;
+          provider_note?: string | null;
+          work_notes?: string | null;
+          materials_used?: string | null;
+          needs_followup?: boolean;
+          client_validated_at?: string | null;
+          client_reported_problem?: boolean;
+          client_comment?: string | null;
+          client_rating?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          request_id?: string | null;
+          service_id?: string | null;
+          provider_id?: string;
+          client_id?: string;
+          title?: string;
+          category?: string;
+          description?: string;
+          address?: string | null;
+          client_phone?: string | null;
+          scheduled_date?: string;
+          start_time?: string;
+          duration_minutes?: number;
+          price?: number | null;
+          final_price?: number | null;
+          status?: string;
+          provider_note?: string | null;
+          work_notes?: string | null;
+          materials_used?: string | null;
+          needs_followup?: boolean;
+          client_validated_at?: string | null;
+          client_reported_problem?: boolean;
+          client_comment?: string | null;
+          client_rating?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      intervention_status_history: {
+        Row: {
+          id: string;
+          intervention_id: string;
+          from_status: string | null;
+          to_status: string;
+          changed_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          intervention_id: string;
+          from_status?: string | null;
+          to_status: string;
+          changed_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          intervention_id?: string;
+          from_status?: string | null;
+          to_status?: string;
+          changed_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      intervention_photos: {
+        Row: {
+          id: string;
+          intervention_id: string;
+          type: string;
+          path: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          intervention_id: string;
+          type: string;
+          path: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          intervention_id?: string;
+          type?: string;
+          path?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      provider_weekly_availability: {
+        Row: {
+          id: string;
+          provider_id: string;
+          day_of_week: number;
+          start_time: string;
+          end_time: string;
+        };
+        Insert: {
+          id?: string;
+          provider_id: string;
+          day_of_week: number;
+          start_time: string;
+          end_time: string;
+        };
+        Update: {
+          id?: string;
+          provider_id?: string;
+          day_of_week?: number;
+          start_time?: string;
+          end_time?: string;
+        };
+        Relationships: [];
+      };
+      provider_unavailable_dates: {
+        Row: {
+          id: string;
+          provider_id: string;
+          date: string;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          provider_id: string;
+          date: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          provider_id?: string;
+          date?: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: string;
+          title: string;
+          body: string | null;
+          intervention_id: string | null;
+          read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: string;
+          title: string;
+          body?: string | null;
+          intervention_id?: string | null;
+          read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          type?: string;
+          title?: string;
+          body?: string | null;
+          intervention_id?: string | null;
+          read?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -334,3 +553,18 @@ export type Review = Database["public"]["Tables"]["reviews"]["Row"];
 
 export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type ServicePhoto = Database["public"]["Tables"]["service_photos"]["Row"];
+
+export type Intervention = Database["public"]["Tables"]["interventions"]["Row"];
+export type InterventionInsert =
+  Database["public"]["Tables"]["interventions"]["Insert"];
+export type InterventionUpdate =
+  Database["public"]["Tables"]["interventions"]["Update"];
+export type InterventionStatusHistory =
+  Database["public"]["Tables"]["intervention_status_history"]["Row"];
+export type InterventionPhoto =
+  Database["public"]["Tables"]["intervention_photos"]["Row"];
+export type ProviderWeeklyAvailability =
+  Database["public"]["Tables"]["provider_weekly_availability"]["Row"];
+export type ProviderUnavailableDate =
+  Database["public"]["Tables"]["provider_unavailable_dates"]["Row"];
+export type Notification = Database["public"]["Tables"]["notifications"]["Row"];
