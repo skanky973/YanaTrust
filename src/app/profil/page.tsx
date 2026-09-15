@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Heart,
   Calendar,
+  CalendarCheck,
 } from "lucide-react";
 import { getCurrentProfile } from "@/lib/profiles/queries";
 import { getProviderRatingSummary } from "@/lib/reviews/queries";
@@ -52,6 +53,7 @@ export default async function ProfilPage() {
     ...(profile.is_provider
       ? [{ href: "/planning", label: "Mon planning", icon: Calendar }]
       : []),
+    { href: "/mes-interventions", label: "Mes interventions", icon: CalendarCheck },
     { href: "/profil/modifier", label: "Modifier mon profil", icon: Pencil },
     { href: "/mes-services", label: "Mes services", icon: Wrench },
     { href: "/mes-demandes", label: "Mes demandes", icon: ClipboardList },
@@ -123,21 +125,16 @@ export default async function ProfilPage() {
       </dl>
 
       {awaitingValidation.length > 0 ? (
-        <div className="flex flex-col gap-2 rounded-xl bg-brand-gold/15 p-4">
+        <Link
+          href="/mes-interventions?vue=attente"
+          className="flex flex-col gap-1 rounded-xl bg-brand-gold/15 p-4"
+        >
           <p className="text-sm font-semibold text-brand-green-dark">
             {awaitingValidation.length} intervention
             {awaitingValidation.length > 1 ? "s" : ""} en attente de votre validation
           </p>
-          {awaitingValidation.map((i) => (
-            <Link
-              key={i.id}
-              href={`/planning/${i.id}`}
-              className="text-sm text-brand-ink underline"
-            >
-              {i.title} — {i.provider ? `${i.provider.first_name} ${i.provider.last_name}` : ""}
-            </Link>
-          ))}
-        </div>
+          <p className="text-xs text-brand-ink/60">Voir dans Mes interventions →</p>
+        </Link>
       ) : null}
 
       <nav className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm shadow-black/5">

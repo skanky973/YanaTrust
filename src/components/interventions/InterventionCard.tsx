@@ -14,9 +14,14 @@ function formatDate(dateStr: string) {
 
 export function InterventionCard({
   intervention,
+  viewerRole = "provider",
 }: {
   intervention: InterventionWithParties;
+  viewerRole?: "provider" | "client";
 }) {
+  const otherParty =
+    viewerRole === "provider" ? intervention.client : intervention.provider;
+
   return (
     <Link
       href={`/planning/${intervention.id}`}
@@ -29,9 +34,7 @@ export function InterventionCard({
           </h3>
           <p className="text-xs text-brand-ink/60">
             {getCategoryLabel(intervention.category)}
-            {intervention.client
-              ? ` · ${intervention.client.first_name} ${intervention.client.last_name}`
-              : ""}
+            {otherParty ? ` · ${otherParty.first_name} ${otherParty.last_name}` : ""}
           </p>
         </div>
         <StatusBadge status={intervention.status} />

@@ -50,6 +50,35 @@ export async function getMyInterventionsAsProvider({
   return data as unknown as InterventionWithParties[];
 }
 
+export async function getMyInterventionsAsClient({
+  status,
+}: { status?: string } = {}): Promise<InterventionWithParties[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  let query = supabase
+    .from("interventions")
+    .select(PARTIES_SELECT)
+    .eq("client_id", user.id)
+    .order("scheduled_date", { ascending: false })
+    .order("start_time", { ascending: false });
+
+  if (status) query = query.eq("status", status);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("getMyInterventionsAsClient:", error.message);
+    return [];
+  }
+
+  return data as unknown as InterventionWithParties[];
+}
+
 export async function getInterventionsAwaitingMyValidation(): Promise<
   InterventionWithParties[]
 > {

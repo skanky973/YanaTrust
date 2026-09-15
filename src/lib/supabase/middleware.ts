@@ -10,6 +10,7 @@ const PROTECTED_PREFIXES = [
   "/mes-demandes",
   "/planning",
   "/notifications",
+  "/mes-interventions",
 ];
 
 function isProtectedPath(pathname: string) {
