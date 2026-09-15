@@ -10,7 +10,6 @@ export type Database = {
           id: string;
           first_name: string;
           last_name: string;
-          phone: string | null;
           city: string | null;
           service_area: string | null;
           avatar_url: string | null;
@@ -25,7 +24,6 @@ export type Database = {
           id: string;
           first_name?: string;
           last_name?: string;
-          phone?: string | null;
           city?: string | null;
           service_area?: string | null;
           avatar_url?: string | null;
@@ -40,7 +38,6 @@ export type Database = {
           id?: string;
           first_name?: string;
           last_name?: string;
-          phone?: string | null;
           city?: string | null;
           service_area?: string | null;
           avatar_url?: string | null;
@@ -51,6 +48,12 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
+      };
+      profile_phones: {
+        Row: { id: string; phone: string | null; updated_at: string };
+        Insert: { id: string; phone?: string | null; updated_at?: string };
+        Update: { id?: string; phone?: string | null; updated_at?: string };
         Relationships: [];
       };
       services: {
@@ -535,6 +538,7 @@ export type Database = {
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
+export type ProfilePhone = Database["public"]["Tables"]["profile_phones"]["Row"];
 
 export type Service = Database["public"]["Tables"]["services"]["Row"];
 export type ServiceInsert = Database["public"]["Tables"]["services"]["Insert"];

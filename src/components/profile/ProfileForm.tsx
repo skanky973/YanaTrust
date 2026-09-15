@@ -7,9 +7,9 @@ import { TextField } from "@/components/ui/TextField";
 import { TextAreaField } from "@/components/ui/TextAreaField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
-import type { Profile } from "@/lib/supabase/database.types";
+import type { ProfileWithPhone } from "@/lib/profiles/queries";
 
-export function ProfileForm({ profile }: { profile: Profile }) {
+export function ProfileForm({ profile }: { profile: ProfileWithPhone }) {
   const [state, formAction] = useActionState(
     updateProfile,
     INITIAL_ACTION_STATE,

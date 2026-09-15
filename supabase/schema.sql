@@ -21,7 +21,6 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   first_name text not null default '',
   last_name text not null default '',
-  phone text,
   city text,
   service_area text,
   avatar_url text,
@@ -54,15 +53,19 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, first_name, last_name, phone, city)
+  insert into public.profiles (id, first_name, last_name, city)
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'first_name', ''),
     coalesce(new.raw_user_meta_data ->> 'last_name', ''),
-    new.raw_user_meta_data ->> 'phone',
     new.raw_user_meta_data ->> 'city'
   )
   on conflict (id) do nothing;
+
+  insert into public.profile_phones (id, phone)
+  values (new.id, new.raw_user_meta_data ->> 'phone')
+  on conflict (id) do nothing;
+
   return new;
 end;
 $$;
@@ -1052,3 +1055,55 @@ create policy "Provider can delete intervention photos from storage"
       where i.id::text = (storage.foldername(name))[1] and i.provider_id = auth.uid()
     )
   );
+
+-- ============================================================================
+-- Phase 8 : Correctif sécurité — téléphone déplacé hors de profiles
+-- ============================================================================
+-- profiles était lisible publiquement (using (true)), ce qui exposait le
+-- numéro de téléphone de tout le monde via l'API REST, même si l'interface
+-- ne l'affichait jamais à des inconnus (RLS filtre les lignes, pas les
+-- colonnes). Le téléphone est déplacé dans une table à part, lisible
+-- uniquement par son propriétaire.
+-- ----------------------------------------------------------------------------
+create table if not exists public.profile_phones (
+  id uuid primary key references public.profiles (id) on delete cascade,
+  phone text,
+  updated_at timestamptz not null default now()
+);
+
+comment on table public.profile_phones is 'Numéro de téléphone du compte, privé (lisible par son seul propriétaire), séparé de profiles qui est public.';
+
+-- Migration des données existantes, puis suppression de la colonne d'origine.
+-- Protégé par un test d'existence pour rester idempotent sur une base neuve
+-- (où profiles n'a jamais eu de colonne phone).
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'phone'
+  ) then
+    insert into public.profile_phones (id, phone)
+    select id, phone from public.profiles where phone is not null
+    on conflict (id) do nothing;
+
+    alter table public.profiles drop column phone;
+  end if;
+end $$;
+
+alter table public.profile_phones enable row level security;
+
+drop policy if exists "Users can view own phone" on public.profile_phones;
+create policy "Users can view own phone"
+  on public.profile_phones for select
+  using (id = auth.uid());
+
+drop policy if exists "Users can insert own phone" on public.profile_phones;
+create policy "Users can insert own phone"
+  on public.profile_phones for insert
+  with check (id = auth.uid());
+
+drop policy if exists "Users can update own phone" on public.profile_phones;
+create policy "Users can update own phone"
+  on public.profile_phones for update
+  using (id = auth.uid())
+  with check (id = auth.uid());

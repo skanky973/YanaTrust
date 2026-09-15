@@ -44,7 +44,6 @@ export async function updateProfile(
     .update({
       first_name: firstName,
       last_name: lastName,
-      phone: phone || null,
       city: city || null,
       service_area: serviceArea || null,
       bio: bio || null,
@@ -54,6 +53,15 @@ export async function updateProfile(
 
   if (error) {
     return { error: "Impossible d'enregistrer le profil." };
+  }
+
+  // Le téléphone vit dans une table séparée, privée (voir profile_phones).
+  const { error: phoneError } = await supabase
+    .from("profile_phones")
+    .upsert({ id: user.id, phone: phone || null, updated_at: new Date().toISOString() });
+
+  if (phoneError) {
+    return { error: "Impossible d'enregistrer le téléphone." };
   }
 
   revalidatePath("/profil");
