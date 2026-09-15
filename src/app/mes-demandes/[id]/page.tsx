@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EditRequestForm } from "@/components/requests/EditRequestForm";
+import { ApplicationCard } from "@/components/requests/ApplicationCard";
+import { getApplicationsForRequest } from "@/lib/applications/queries";
 
 export const metadata: Metadata = {
   title: "Modifier la demande — YanaTrust",
@@ -33,6 +35,8 @@ export default async function ModifierDemandePage({
     notFound();
   }
 
+  const applications = await getApplicationsForRequest(id);
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
       <h1 className="text-2xl font-bold text-brand-green-dark">
@@ -40,6 +44,21 @@ export default async function ModifierDemandePage({
       </h1>
 
       <EditRequestForm request={request} />
+
+      <div className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold text-brand-ink">
+          Candidatures ({applications.length})
+        </h2>
+        {applications.length === 0 ? (
+          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm text-brand-ink/60">
+            Aucune candidature pour le moment.
+          </p>
+        ) : (
+          applications.map((application) => (
+            <ApplicationCard key={application.id} application={application} />
+          ))
+        )}
+      </div>
     </div>
   );
 }
