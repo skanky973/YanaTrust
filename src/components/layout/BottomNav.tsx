@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { href: "/profil", label: "Profil", icon: User },
 ];
 
-export function BottomNav() {
+export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
 
   return (
@@ -51,11 +51,21 @@ export function BottomNav() {
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >
-                <Icon
-                  className="h-6 w-6"
-                  strokeWidth={isActive ? 2.5 : 2}
-                  aria-hidden="true"
-                />
+                <span className="relative">
+                  <Icon
+                    className="h-6 w-6"
+                    strokeWidth={isActive ? 2.5 : 2}
+                    aria-hidden="true"
+                  />
+                  {href === "/profil" && unreadCount > 0 ? (
+                    <span
+                      className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
+                      aria-label={`${unreadCount} notification${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""}`}
+                    >
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  ) : null}
+                </span>
                 {label}
               </Link>
             </li>

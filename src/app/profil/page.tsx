@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   BadgeCheck,
+  Bell,
   ChevronRight,
   Pencil,
   Wrench,
@@ -17,6 +18,7 @@ import { getCurrentProfile } from "@/lib/profiles/queries";
 import { getProviderRatingSummary } from "@/lib/reviews/queries";
 import { getProviderTrustScore } from "@/lib/trust/queries";
 import { getInterventionsAwaitingMyValidation } from "@/lib/interventions/queries";
+import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import { createClient } from "@/lib/supabase/server";
 import { RatingBadge } from "@/components/reviews/RatingBadge";
 import { TrustScoreBadge } from "@/components/trust/TrustScoreBadge";
@@ -49,9 +51,13 @@ export default async function ProfilPage() {
       ])
     : [null, null];
 
-  const awaitingValidation = await getInterventionsAwaitingMyValidation();
+  const [awaitingValidation, unreadCount] = await Promise.all([
+    getInterventionsAwaitingMyValidation(),
+    getUnreadNotificationCount(),
+  ]);
 
   const menuItems = [
+    { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
     ...(profile.is_provider
       ? [
           { href: "/planning", label: "Mon planning", icon: Calendar },
@@ -144,7 +150,7 @@ export default async function ProfilPage() {
       ) : null}
 
       <nav className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm shadow-black/5">
-        {menuItems.map(({ href, label, icon: Icon }, i) => (
+        {menuItems.map(({ href, label, icon: Icon, badge }, i) => (
           <Link
             key={href}
             href={href}
@@ -154,6 +160,11 @@ export default async function ProfilPage() {
           >
             <Icon className="h-5 w-5 text-brand-green-dark" aria-hidden="true" />
             <span className="flex-1">{label}</span>
+            {badge ? (
+              <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white">
+                {badge > 9 ? "9+" : badge}
+              </span>
+            ) : null}
             <ChevronRight className="h-4 w-4 text-brand-ink/30" aria-hidden="true" />
           </Link>
         ))}
