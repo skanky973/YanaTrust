@@ -1,15 +1,8 @@
 import Link from "next/link";
 import { DeleteRequestButton } from "@/components/requests/DeleteRequestButton";
 import { getCategoryLabel } from "@/lib/services/categories";
-import { getStatusLabel } from "@/lib/requests/status";
+import { getStatusLabel, getStatusColor } from "@/lib/requests/status";
 import type { ServiceRequest } from "@/lib/supabase/database.types";
-
-const STATUS_STYLES: Record<string, string> = {
-  open: "bg-brand-green/15 text-brand-green-dark",
-  in_discussion: "bg-brand-gold/25 text-brand-green-dark",
-  completed: "bg-brand-ink/10 text-brand-ink/60",
-  cancelled: "bg-red-50 text-red-500",
-};
 
 export function MyRequestCard({ request }: { request: ServiceRequest }) {
   return (
@@ -22,9 +15,7 @@ export function MyRequestCard({ request }: { request: ServiceRequest }) {
           </p>
         </div>
         <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
-            STATUS_STYLES[request.status] ?? "bg-brand-ink/10 text-brand-ink/60"
-          }`}
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${getStatusColor(request.status)}`}
         >
           {getStatusLabel(request.status)}
         </span>

@@ -528,6 +528,135 @@ export type Database = {
         };
         Relationships: [];
       };
+      request_photos: {
+        Row: { id: string; request_id: string; path: string; created_at: string };
+        Insert: { id?: string; request_id: string; path: string; created_at?: string };
+        Update: { id?: string; request_id?: string; path?: string; created_at?: string };
+        Relationships: [];
+      };
+      request_applications: {
+        Row: {
+          id: string;
+          request_id: string;
+          provider_id: string;
+          conversation_id: string | null;
+          message: string;
+          proposed_price: number | null;
+          estimated_duration_minutes: number | null;
+          note: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          request_id: string;
+          provider_id: string;
+          conversation_id?: string | null;
+          message?: string;
+          proposed_price?: number | null;
+          estimated_duration_minutes?: number | null;
+          note?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          request_id?: string;
+          provider_id?: string;
+          conversation_id?: string | null;
+          message?: string;
+          proposed_price?: number | null;
+          estimated_duration_minutes?: number | null;
+          note?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      booking_proposals: {
+        Row: {
+          id: string;
+          request_id: string | null;
+          application_id: string | null;
+          conversation_id: string | null;
+          provider_id: string;
+          client_id: string;
+          title: string;
+          category: string;
+          description: string;
+          address: string | null;
+          client_phone: string | null;
+          conditions: string | null;
+          scheduled_date: string;
+          start_time: string;
+          duration_minutes: number;
+          price: number | null;
+          status: string;
+          client_validated_at: string | null;
+          client_validated_by: string | null;
+          provider_validated_at: string | null;
+          provider_validated_by: string | null;
+          intervention_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          request_id?: string | null;
+          application_id?: string | null;
+          conversation_id?: string | null;
+          provider_id: string;
+          client_id: string;
+          title: string;
+          category: string;
+          description?: string;
+          address?: string | null;
+          client_phone?: string | null;
+          conditions?: string | null;
+          scheduled_date: string;
+          start_time: string;
+          duration_minutes?: number;
+          price?: number | null;
+          status?: string;
+          client_validated_at?: string | null;
+          client_validated_by?: string | null;
+          provider_validated_at?: string | null;
+          provider_validated_by?: string | null;
+          intervention_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          request_id?: string | null;
+          application_id?: string | null;
+          conversation_id?: string | null;
+          provider_id?: string;
+          client_id?: string;
+          title?: string;
+          category?: string;
+          description?: string;
+          address?: string | null;
+          client_phone?: string | null;
+          conditions?: string | null;
+          scheduled_date?: string;
+          start_time?: string;
+          duration_minutes?: number;
+          price?: number | null;
+          status?: string;
+          client_validated_at?: string | null;
+          client_validated_by?: string | null;
+          provider_validated_at?: string | null;
+          provider_validated_by?: string | null;
+          intervention_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -572,3 +701,9 @@ export type ProviderWeeklyAvailability =
 export type ProviderUnavailableDate =
   Database["public"]["Tables"]["provider_unavailable_dates"]["Row"];
 export type Notification = Database["public"]["Tables"]["notifications"]["Row"];
+
+export type RequestPhoto = Database["public"]["Tables"]["request_photos"]["Row"];
+export type RequestApplication =
+  Database["public"]["Tables"]["request_applications"]["Row"];
+export type BookingProposal =
+  Database["public"]["Tables"]["booking_proposals"]["Row"];

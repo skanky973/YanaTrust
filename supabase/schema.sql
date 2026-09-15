@@ -1107,3 +1107,552 @@ create policy "Users can update own phone"
   on public.profile_phones for update
   using (id = auth.uid())
   with check (id = auth.uid());
+
+-- ============================================================================
+-- Phase 9 : Candidatures, propositions de créneaux et double validation
+-- ============================================================================
+-- Les demandes deviennent visibles aux prestataires (elles ne l'étaient pas
+-- avant), qui peuvent y postuler. Le client accepte une candidature pour
+-- ouvrir une conversation, puis prestataire et client négocient un créneau
+-- via booking_proposals, avec double validation avant confirmation.
+
+-- ----------------------------------------------------------------------------
+-- requests : élargissement des statuts + visibilité prestataire (additive,
+-- ne retire aucun droit existant : Postgres combine les policies avec OR).
+-- ----------------------------------------------------------------------------
+alter table public.requests drop constraint if exists requests_status_valid;
+alter table public.requests add constraint requests_status_valid check (
+  status in (
+    'draft', 'open', 'in_discussion', 'planning_in_progress',
+    'confirmed', 'in_progress', 'completed', 'cancelled'
+  )
+);
+
+drop policy if exists "Providers can view open requests or ones they applied to" on public.requests;
+create policy "Providers can view open requests or ones they applied to"
+  on public.requests for select
+  using (
+    status = 'open'
+    or exists (
+      select 1 from public.request_applications a
+      where a.request_id = requests.id and a.provider_id = auth.uid()
+    )
+  );
+
+-- ----------------------------------------------------------------------------
+-- Table: request_photos
+-- ----------------------------------------------------------------------------
+create table if not exists public.request_photos (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.requests (id) on delete cascade,
+  path text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists request_photos_request_id_idx on public.request_photos (request_id);
+
+alter table public.request_photos enable row level security;
+
+drop policy if exists "Same visibility as the parent request" on public.request_photos;
+create policy "Same visibility as the parent request"
+  on public.request_photos for select
+  using (
+    exists (
+      select 1 from public.requests r
+      where r.id = request_id
+        and (
+          r.client_id = auth.uid()
+          or r.status = 'open'
+          or exists (
+            select 1 from public.request_applications a
+            where a.request_id = r.id and a.provider_id = auth.uid()
+          )
+        )
+    )
+  );
+
+drop policy if exists "Client can add photos to own request" on public.request_photos;
+create policy "Client can add photos to own request"
+  on public.request_photos for insert
+  with check (
+    exists (select 1 from public.requests r where r.id = request_id and r.client_id = auth.uid())
+  );
+
+drop policy if exists "Client can delete photos of own request" on public.request_photos;
+create policy "Client can delete photos of own request"
+  on public.request_photos for delete
+  using (
+    exists (select 1 from public.requests r where r.id = request_id and r.client_id = auth.uid())
+  );
+
+-- ----------------------------------------------------------------------------
+-- Table: request_applications (candidatures des prestataires)
+-- ----------------------------------------------------------------------------
+create table if not exists public.request_applications (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.requests (id) on delete cascade,
+  provider_id uuid not null references public.profiles (id) on delete cascade,
+  conversation_id uuid references public.conversations (id) on delete set null,
+  message text not null default '',
+  proposed_price numeric(10, 2),
+  estimated_duration_minutes integer,
+  note text,
+  status text not null default 'pending',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint request_applications_status_valid check (
+    status in ('pending', 'accepted_for_discussion', 'refused', 'not_retained')
+  ),
+  constraint request_applications_price_nonnegative check (
+    proposed_price is null or proposed_price >= 0
+  ),
+  constraint request_applications_duration_positive check (
+    estimated_duration_minutes is null or estimated_duration_minutes > 0
+  ),
+  constraint request_applications_message_length check (char_length(message) <= 2000),
+  unique (request_id, provider_id)
+);
+
+comment on table public.request_applications is 'Candidature d''un prestataire à une demande de service.';
+
+create index if not exists request_applications_request_id_idx on public.request_applications (request_id);
+create index if not exists request_applications_provider_id_idx on public.request_applications (provider_id);
+
+-- Le client ne peut agir que sur le statut (accepter/refuser/non-retenue) ;
+-- le prestataire ne peut modifier sa proposition que tant qu'elle est en
+-- attente, et ne change jamais lui-même le statut.
+create or replace function public.protect_request_application_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  is_client boolean;
+begin
+  -- Laisse passer sans restriction la cascade système déclenchée par
+  -- handle_booking_proposal_confirmed (ex: marquer les autres candidatures
+  -- "non retenue" pour des prestataires autres que l'appelant).
+  if coalesce(current_setting('app.bypass_protection', true), 'false') = 'true' then
+    new.updated_at := now();
+    return new;
+  end if;
+
+  select exists(
+    select 1 from public.requests r where r.id = old.request_id and r.client_id = auth.uid()
+  ) into is_client;
+
+  new.request_id := old.request_id;
+  new.provider_id := old.provider_id;
+
+  if is_client then
+    new.message := old.message;
+    new.proposed_price := old.proposed_price;
+    new.estimated_duration_minutes := old.estimated_duration_minutes;
+    new.note := old.note;
+    if new.status not in ('accepted_for_discussion', 'refused', 'not_retained') then
+      new.status := old.status;
+    end if;
+  elsif auth.uid() = old.provider_id then
+    if old.status <> 'pending' then
+      new.message := old.message;
+      new.proposed_price := old.proposed_price;
+      new.estimated_duration_minutes := old.estimated_duration_minutes;
+      new.note := old.note;
+    end if;
+    new.status := old.status;
+  else
+    new.status := old.status;
+  end if;
+
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists before_request_application_update on public.request_applications;
+create trigger before_request_application_update
+  before update on public.request_applications
+  for each row execute function public.protect_request_application_fields();
+
+alter table public.request_applications enable row level security;
+
+drop policy if exists "Client and applicant can view applications" on public.request_applications;
+create policy "Client and applicant can view applications"
+  on public.request_applications for select
+  using (
+    provider_id = auth.uid()
+    or exists (select 1 from public.requests r where r.id = request_id and r.client_id = auth.uid())
+  );
+
+drop policy if exists "Providers can apply to open requests" on public.request_applications;
+create policy "Providers can apply to open requests"
+  on public.request_applications for insert
+  with check (
+    provider_id = auth.uid()
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_provider = true)
+    and exists (
+      select 1 from public.requests r
+      where r.id = request_id and r.status = 'open' and r.client_id <> auth.uid()
+    )
+  );
+
+drop policy if exists "Client and applicant can update applications" on public.request_applications;
+create policy "Client and applicant can update applications"
+  on public.request_applications for update
+  using (
+    provider_id = auth.uid()
+    or exists (select 1 from public.requests r where r.id = request_id and r.client_id = auth.uid())
+  )
+  with check (
+    provider_id = auth.uid()
+    or exists (select 1 from public.requests r where r.id = request_id and r.client_id = auth.uid())
+  );
+
+-- ----------------------------------------------------------------------------
+-- Table: booking_proposals
+-- Représente à la fois un créneau proposé après candidature ET une
+-- proposition directe d'un prestataire : les deux suivent le même circuit de
+-- double validation (client puis prestataire) avant de devenir une
+-- intervention confirmée.
+-- ----------------------------------------------------------------------------
+create table if not exists public.booking_proposals (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid references public.requests (id) on delete set null,
+  application_id uuid references public.request_applications (id) on delete set null,
+  conversation_id uuid references public.conversations (id) on delete set null,
+  provider_id uuid not null references public.profiles (id) on delete cascade,
+  client_id uuid not null references public.profiles (id) on delete cascade,
+  title text not null,
+  category text not null,
+  description text not null default '',
+  address text,
+  client_phone text,
+  conditions text,
+  scheduled_date date not null,
+  start_time time not null,
+  duration_minutes integer not null default 60,
+  price numeric(10, 2),
+  status text not null default 'pending_client',
+  client_validated_at timestamptz,
+  client_validated_by uuid references public.profiles (id),
+  provider_validated_at timestamptz,
+  provider_validated_by uuid references public.profiles (id),
+  intervention_id uuid references public.interventions (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint booking_proposals_distinct_people check (provider_id <> client_id),
+  constraint booking_proposals_duration_positive check (duration_minutes > 0),
+  constraint booking_proposals_status_valid check (
+    status in (
+      'pending_client', 'modification_requested', 'pending_provider',
+      'confirmed', 'refused', 'cancelled'
+    )
+  ),
+  constraint booking_proposals_category_valid check (
+    category in (
+      'menage', 'bricolage', 'jardinage', 'demenagement', 'reparation',
+      'beaute_bien_etre', 'cours_particuliers', 'transport', 'evenementiel', 'autre'
+    )
+  )
+);
+
+comment on table public.booking_proposals is 'Proposition de créneau/prestation en attente de double validation (client puis prestataire) avant de devenir une intervention confirmée.';
+
+create index if not exists booking_proposals_provider_id_idx on public.booking_proposals (provider_id);
+create index if not exists booking_proposals_client_id_idx on public.booking_proposals (client_id);
+create index if not exists booking_proposals_request_id_idx on public.booking_proposals (request_id);
+create index if not exists booking_proposals_application_id_idx on public.booking_proposals (application_id);
+create index if not exists booking_proposals_status_idx on public.booking_proposals (status);
+
+-- Protège les champs selon qui agit, et n'autorise que les transitions de
+-- statut légitimes pour chaque partie.
+create or replace function public.protect_booking_proposal_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- Laisse passer sans restriction les écritures internes de
+  -- handle_booking_proposal_confirmed (fixer intervention_id, annuler les
+  -- propositions concurrentes de la même négociation).
+  if coalesce(current_setting('app.bypass_protection', true), 'false') = 'true' then
+    new.updated_at := now();
+    return new;
+  end if;
+
+  new.provider_id := old.provider_id;
+  new.client_id := old.client_id;
+  new.request_id := old.request_id;
+  new.application_id := old.application_id;
+  new.conversation_id := old.conversation_id;
+  new.intervention_id := old.intervention_id;
+
+  if auth.uid() = old.client_id and auth.uid() <> old.provider_id then
+    new.title := old.title;
+    new.category := old.category;
+    new.description := old.description;
+    new.address := old.address;
+    new.client_phone := old.client_phone;
+    new.conditions := old.conditions;
+    new.scheduled_date := old.scheduled_date;
+    new.start_time := old.start_time;
+    new.duration_minutes := old.duration_minutes;
+    new.price := old.price;
+    new.provider_validated_at := old.provider_validated_at;
+    new.provider_validated_by := old.provider_validated_by;
+
+    if old.status <> 'pending_client'
+       or new.status not in ('pending_provider', 'modification_requested', 'refused') then
+      new.status := old.status;
+      new.client_validated_at := old.client_validated_at;
+      new.client_validated_by := old.client_validated_by;
+    end if;
+  elsif auth.uid() = old.provider_id then
+    if old.status not in ('pending_client', 'modification_requested') then
+      new.title := old.title;
+      new.category := old.category;
+      new.description := old.description;
+      new.address := old.address;
+      new.client_phone := old.client_phone;
+      new.conditions := old.conditions;
+      new.scheduled_date := old.scheduled_date;
+      new.start_time := old.start_time;
+      new.duration_minutes := old.duration_minutes;
+      new.price := old.price;
+    end if;
+
+    new.client_validated_at := old.client_validated_at;
+    new.client_validated_by := old.client_validated_by;
+
+    if not (
+      (old.status = 'pending_provider' and new.status = 'confirmed')
+      or (old.status in ('pending_client', 'modification_requested', 'pending_provider') and new.status = 'cancelled')
+      or (old.status = 'modification_requested' and new.status = 'pending_client')
+      or (new.status = old.status)
+    ) then
+      new.status := old.status;
+    end if;
+  else
+    new.status := old.status;
+  end if;
+
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists before_booking_proposal_update on public.booking_proposals;
+create trigger before_booking_proposal_update
+  before update on public.booking_proposals
+  for each row execute function public.protect_booking_proposal_fields();
+
+-- Quand une proposition passe à 'confirmed' (validation finale du
+-- prestataire) : re-vérifie qu'aucun conflit d'horaire n'est apparu entre
+-- temps, crée l'intervention, annule les propositions concurrentes de la
+-- même négociation, marque les autres candidatures "non retenue", fait
+-- avancer la demande à 'confirmed', et notifie les deux parties.
+create or replace function public.handle_booking_proposal_confirmed()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_intervention_id uuid;
+begin
+  if new.status = 'confirmed' and old.status is distinct from 'confirmed' then
+    if exists (
+      select 1 from public.interventions i
+      where i.provider_id = new.provider_id
+        and i.scheduled_date = new.scheduled_date
+        and i.status <> 'cancelled'
+        and (new.start_time, (new.start_time + (new.duration_minutes || ' minutes')::interval))
+            overlaps
+            (i.start_time, (i.start_time + (i.duration_minutes || ' minutes')::interval))
+    ) then
+      raise exception 'Ce créneau n''est plus disponible.';
+    end if;
+
+    insert into public.interventions (
+      request_id, provider_id, client_id, title, category, description,
+      address, client_phone, scheduled_date, start_time, duration_minutes, price, status
+    ) values (
+      new.request_id, new.provider_id, new.client_id, new.title, new.category, new.description,
+      new.address, new.client_phone, new.scheduled_date, new.start_time, new.duration_minutes, new.price, 'confirmed'
+    )
+    returning id into new_intervention_id;
+
+    -- Levée temporaire (durée de la transaction) de la protection de champs,
+    -- pour permettre à cette cascade système d'écrire des lignes qui ne
+    -- appartiennent pas forcément à l'utilisateur ayant déclenché l'action
+    -- (ex: candidatures d'autres prestataires marquées "non retenue").
+    perform set_config('app.bypass_protection', 'true', true);
+
+    update public.booking_proposals
+    set intervention_id = new_intervention_id
+    where id = new.id;
+
+    update public.booking_proposals
+    set status = 'cancelled'
+    where id <> new.id
+      and status not in ('confirmed', 'cancelled', 'refused')
+      and (
+        (new.application_id is not null and application_id = new.application_id)
+        or (
+          new.application_id is null
+          and request_id is null
+          and provider_id = new.provider_id
+          and client_id = new.client_id
+        )
+      );
+
+    if new.request_id is not null then
+      update public.request_applications
+      set status = 'not_retained'
+      where request_id = new.request_id
+        and provider_id <> new.provider_id
+        and status in ('pending', 'accepted_for_discussion');
+
+      update public.requests
+      set status = 'confirmed'
+      where id = new.request_id;
+    end if;
+
+    insert into public.notifications (user_id, type, title, body, intervention_id)
+    values
+      (new.client_id, 'booking_confirmed', 'Prestation confirmée', new.title, new_intervention_id),
+      (new.provider_id, 'booking_confirmed', 'Prestation confirmée', new.title, new_intervention_id);
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists after_booking_proposal_confirmed on public.booking_proposals;
+create trigger after_booking_proposal_confirmed
+  after update on public.booking_proposals
+  for each row execute function public.handle_booking_proposal_confirmed();
+
+alter table public.booking_proposals enable row level security;
+
+drop policy if exists "Participants can view their booking proposals" on public.booking_proposals;
+create policy "Participants can view their booking proposals"
+  on public.booking_proposals for select
+  using (provider_id = auth.uid() or client_id = auth.uid());
+
+drop policy if exists "Provider can create booking proposals" on public.booking_proposals;
+create policy "Provider can create booking proposals"
+  on public.booking_proposals for insert
+  with check (
+    provider_id = auth.uid()
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_provider = true)
+  );
+
+drop policy if exists "Participants can update their booking proposals" on public.booking_proposals;
+create policy "Participants can update their booking proposals"
+  on public.booking_proposals for update
+  using (provider_id = auth.uid() or client_id = auth.uid())
+  with check (provider_id = auth.uid() or client_id = auth.uid());
+
+-- ----------------------------------------------------------------------------
+-- notifications : nouveaux types pour candidatures, propositions et messages
+-- ----------------------------------------------------------------------------
+alter table public.notifications drop constraint if exists notifications_type_valid;
+alter table public.notifications add constraint notifications_type_valid check (
+  type in (
+    'new_request', 'request_accepted', 'appointment_changed', 'upcoming_intervention',
+    'cancelled', 'completed', 'validation_requested', 'client_validated', 'client_problem',
+    'new_application', 'application_accepted', 'application_refused', 'new_message',
+    'new_slot_proposal', 'slot_accepted', 'slot_refused', 'modification_requested',
+    'provider_proposal', 'booking_confirmed', 'booking_cancelled'
+  )
+);
+
+-- Un participant d'une candidature peut notifier l'autre partie (utilisé par
+-- les actions applicatives : nouvelle candidature, acceptation, refus...).
+drop policy if exists "Participants can notify each other about applications" on public.notifications;
+create policy "Participants can notify each other about applications"
+  on public.notifications for insert
+  with check (
+    exists (
+      select 1 from public.request_applications a
+      join public.requests r on r.id = a.request_id
+      where (a.provider_id = user_id and r.client_id = auth.uid())
+         or (r.client_id = user_id and a.provider_id = auth.uid())
+    )
+  );
+
+-- Idem pour les propositions de créneau.
+drop policy if exists "Participants can notify each other about proposals" on public.notifications;
+create policy "Participants can notify each other about proposals"
+  on public.notifications for insert
+  with check (
+    exists (
+      select 1 from public.booking_proposals bp
+      where (bp.provider_id = auth.uid() and bp.client_id = user_id)
+         or (bp.client_id = auth.uid() and bp.provider_id = user_id)
+    )
+  );
+
+-- Idem pour un nouveau message dans une conversation existante.
+drop policy if exists "Participants can notify each other about messages" on public.notifications;
+create policy "Participants can notify each other about messages"
+  on public.notifications for insert
+  with check (
+    exists (
+      select 1 from public.conversations c
+      where (c.participant_one = auth.uid() and c.participant_two = user_id)
+         or (c.participant_two = auth.uid() and c.participant_one = user_id)
+    )
+  );
+
+-- ----------------------------------------------------------------------------
+-- Bucket de stockage privé pour les photos de demande (même logique que les
+-- photos d'intervention : accès restreint à ceux qui peuvent voir la demande).
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('request-photos', 'request-photos', false)
+on conflict (id) do nothing;
+
+drop policy if exists "Same visibility as parent request for storage" on storage.objects;
+create policy "Same visibility as parent request for storage"
+  on storage.objects for select
+  using (
+    bucket_id = 'request-photos'
+    and exists (
+      select 1 from public.requests r
+      where r.id::text = (storage.foldername(name))[1]
+        and (
+          r.client_id = auth.uid()
+          or r.status = 'open'
+          or exists (
+            select 1 from public.request_applications a
+            where a.request_id = r.id and a.provider_id = auth.uid()
+          )
+        )
+    )
+  );
+
+drop policy if exists "Client can upload request photos" on storage.objects;
+create policy "Client can upload request photos"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'request-photos'
+    and exists (
+      select 1 from public.requests r
+      where r.id::text = (storage.foldername(name))[1] and r.client_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Client can delete request photos" on storage.objects;
+create policy "Client can delete request photos"
+  on storage.objects for delete
+  using (
+    bucket_id = 'request-photos'
+    and exists (
+      select 1 from public.requests r
+      where r.id::text = (storage.foldername(name))[1] and r.client_id = auth.uid()
+    )
+  );

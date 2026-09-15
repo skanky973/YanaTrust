@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requestFormSchema } from "@/lib/validation/request";
+import { uploadRequestPhotos } from "@/lib/requests/photo-upload";
 import type { ActionState } from "@/lib/actions/action-state";
 
 export async function createRequest(
@@ -35,18 +36,27 @@ export async function createRequest(
   const { title, category, description, budget, city, desiredDate } =
     parsed.data;
 
-  const { error } = await supabase.from("requests").insert({
-    client_id: user.id,
-    title,
-    category,
-    description,
-    budget: budget ? Number(budget) : null,
-    city: city || null,
-    desired_date: desiredDate || null,
-  });
+  const { data: created, error } = await supabase
+    .from("requests")
+    .insert({
+      client_id: user.id,
+      title,
+      category,
+      description,
+      budget: budget ? Number(budget) : null,
+      city: city || null,
+      desired_date: desiredDate || null,
+    })
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !created) {
     return { error: "Impossible de publier la demande." };
+  }
+
+  const photos = formData.getAll("photos").filter((f): f is File => f instanceof File);
+  if (photos.length > 0) {
+    await uploadRequestPhotos(supabase, { requestId: created.id, files: photos });
   }
 
   redirect("/mes-demandes");

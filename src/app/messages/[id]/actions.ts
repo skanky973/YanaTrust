@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification } from "@/lib/notifications/create";
 import type { ActionState } from "@/lib/actions/action-state";
 
 const messageSchema = z.object({
@@ -38,6 +39,26 @@ export async function sendMessage(
 
   if (error) {
     return { error: "Impossible d'envoyer le message." };
+  }
+
+  const { data: conversation } = await supabase
+    .from("conversations")
+    .select("participant_one, participant_two")
+    .eq("id", conversationId)
+    .single();
+
+  if (conversation) {
+    const recipientId =
+      conversation.participant_one === user.id
+        ? conversation.participant_two
+        : conversation.participant_one;
+
+    await createNotification(supabase, {
+      userId: recipientId,
+      type: "new_message",
+      title: "Nouveau message",
+      body: parsed.data.content.slice(0, 120),
+    });
   }
 
   return { success: true };

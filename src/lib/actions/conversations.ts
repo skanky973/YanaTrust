@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getOrCreateConversation } from "@/lib/conversations/get-or-create";
 
 export async function startConversationWithUser(otherUserId: string) {
   const supabase = await createClient();
@@ -17,41 +18,7 @@ export async function startConversationWithUser(otherUserId: string) {
     redirect("/messages");
   }
 
-  const { data: existing } = await supabase
-    .from("conversations")
-    .select("id")
-    .or(
-      `and(participant_one.eq.${user.id},participant_two.eq.${otherUserId}),and(participant_one.eq.${otherUserId},participant_two.eq.${user.id})`,
-    )
-    .maybeSingle();
+  const conversationId = await getOrCreateConversation(supabase, user.id, otherUserId);
 
-  if (existing) {
-    redirect(`/messages/${existing.id}`);
-  }
-
-  const { data: created, error } = await supabase
-    .from("conversations")
-    .insert({ participant_one: user.id, participant_two: otherUserId })
-    .select("id")
-    .single();
-
-  if (error || !created) {
-    // Condition de course probable : une conversation vient d'être créée en
-    // parallèle. L'index unique l'empêche d'exister en double, on la relit.
-    const { data: retry } = await supabase
-      .from("conversations")
-      .select("id")
-      .or(
-        `and(participant_one.eq.${user.id},participant_two.eq.${otherUserId}),and(participant_one.eq.${otherUserId},participant_two.eq.${user.id})`,
-      )
-      .maybeSingle();
-
-    if (retry) {
-      redirect(`/messages/${retry.id}`);
-    }
-
-    redirect("/messages");
-  }
-
-  redirect(`/messages/${created.id}`);
+  redirect(conversationId ? `/messages/${conversationId}` : "/messages");
 }

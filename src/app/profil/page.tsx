@@ -10,6 +10,8 @@ import {
   Heart,
   Calendar,
   CalendarCheck,
+  Search,
+  FileCheck,
 } from "lucide-react";
 import { getCurrentProfile } from "@/lib/profiles/queries";
 import { getProviderRatingSummary } from "@/lib/reviews/queries";
@@ -51,7 +53,11 @@ export default async function ProfilPage() {
 
   const menuItems = [
     ...(profile.is_provider
-      ? [{ href: "/planning", label: "Mon planning", icon: Calendar }]
+      ? [
+          { href: "/planning", label: "Mon planning", icon: Calendar },
+          { href: "/demandes", label: "Demandes ouvertes", icon: Search },
+          { href: "/mes-candidatures", label: "Mes candidatures", icon: FileCheck },
+        ]
       : []),
     { href: "/mes-interventions", label: "Mes interventions", icon: CalendarCheck },
     { href: "/profil/modifier", label: "Modifier mon profil", icon: Pencil },

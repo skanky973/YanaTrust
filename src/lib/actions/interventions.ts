@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import {
-  interventionFormSchema,
   completionReportSchema,
   clientValidationSchema,
 } from "@/lib/validation/intervention";
@@ -25,107 +24,6 @@ async function requireCurrentUser() {
   }
 
   return { supabase, userId: user.id };
-}
-
-// ----------------------------------------------------------------------------
-// Création manuelle par le prestataire
-// ----------------------------------------------------------------------------
-export async function createIntervention(
-  _prevState: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const parsed = interventionFormSchema.safeParse({
-    clientId: formData.get("clientId"),
-    title: formData.get("title"),
-    category: formData.get("category"),
-    description: formData.get("description"),
-    address: formData.get("address"),
-    clientPhone: formData.get("clientPhone"),
-    scheduledDate: formData.get("scheduledDate"),
-    startTime: formData.get("startTime"),
-    durationMinutes: formData.get("durationMinutes"),
-    price: formData.get("price"),
-  });
-
-  if (!parsed.success) {
-    return { fieldErrors: z.flattenError(parsed.error).fieldErrors };
-  }
-
-  const { supabase, userId } = await requireCurrentUser();
-
-  // Seul un compte passé en mode prestataire peut planifier une intervention
-  // pour un client : empêche un utilisateur quelconque de fabriquer un faux
-  // rendez-vous au nom d'un autre utilisateur.
-  const { data: actingProfile } = await supabase
-    .from("profiles")
-    .select("is_provider")
-    .eq("id", userId)
-    .single();
-
-  if (!actingProfile?.is_provider) {
-    return { error: "Seul un compte prestataire peut créer une intervention." };
-  }
-
-  const {
-    clientId,
-    title,
-    category,
-    description,
-    address,
-    clientPhone,
-    scheduledDate,
-    startTime,
-    durationMinutes,
-    price,
-  } = parsed.data;
-
-  const ignoreConflict = formData.get("ignoreConflict") === "true";
-
-  if (!ignoreConflict) {
-    const conflict = await hasScheduleConflict({
-      providerId: userId,
-      date: scheduledDate,
-      startTime,
-      durationMinutes,
-    });
-
-    if (conflict) {
-      return { error: "CONFLICT" };
-    }
-  }
-
-  const { data: created, error } = await supabase
-    .from("interventions")
-    .insert({
-      provider_id: userId,
-      client_id: clientId,
-      title,
-      category,
-      description: description || "",
-      address: address || null,
-      client_phone: clientPhone || null,
-      scheduled_date: scheduledDate,
-      start_time: startTime,
-      duration_minutes: durationMinutes,
-      price: price ? Number(price) : null,
-      status: "confirmed",
-    })
-    .select("id")
-    .single();
-
-  if (error || !created) {
-    return { error: "Impossible de créer l'intervention." };
-  }
-
-  await createNotification(supabase, {
-    userId: clientId,
-    type: "appointment_changed",
-    title: "Nouvelle intervention planifiée",
-    body: `${title} le ${scheduledDate} à ${startTime}.`,
-    interventionId: created.id,
-  });
-
-  redirect(`/planning/${created.id}`);
 }
 
 // ----------------------------------------------------------------------------

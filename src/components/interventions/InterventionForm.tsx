@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useRef } from "react";
-import { createIntervention } from "@/lib/actions/interventions";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createProposal } from "@/lib/actions/proposals";
 import { INITIAL_ACTION_STATE } from "@/lib/actions/action-state";
 import { TextField } from "@/components/ui/TextField";
 import { TextAreaField } from "@/components/ui/TextAreaField";
@@ -11,35 +12,33 @@ import { ClientPicker } from "@/components/interventions/ClientPicker";
 import { SERVICE_CATEGORIES } from "@/lib/services/categories";
 
 export function InterventionForm() {
-  const [state, formAction] = useActionState(
-    createIntervention,
-    INITIAL_ACTION_STATE,
-  );
-  const ignoreConflictRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [state, formAction] = useActionState(createProposal, INITIAL_ACTION_STATE);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state.success && state.redirectTo) {
+      router.push(state.redirectTo);
+    }
+  }, [state.success, state.redirectTo, router]);
+
+  if (state.success) {
+    return (
+      <Alert variant="success">
+        Proposition envoyée : elle apparaîtra dans la conversation avec le
+        client, en attente de sa validation.
+      </Alert>
+    );
+  }
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-4">
-      {state.error === "CONFLICT" ? (
-        <Alert>
-          Vous avez déjà une intervention sur ce créneau.{" "}
-          <button
-            type="submit"
-            onClick={() => {
-              if (ignoreConflictRef.current) {
-                ignoreConflictRef.current.value = "true";
-              }
-            }}
-            className="font-semibold underline"
-          >
-            Planifier quand même
-          </button>
-        </Alert>
-      ) : state.error ? (
-        <Alert>{state.error}</Alert>
-      ) : null}
+    <form action={formAction} className="flex flex-col gap-4">
+      {state.error ? <Alert>{state.error}</Alert> : null}
 
-      <input ref={ignoreConflictRef} type="hidden" name="ignoreConflict" defaultValue="false" />
+      <p className="rounded-xl bg-brand-gold/15 px-4 py-3 text-sm text-brand-ink/80">
+        Cette proposition sera envoyée au client, qui devra d&rsquo;abord
+        l&rsquo;accepter. Elle ne sera ajoutée à votre planning qu&rsquo;après
+        votre validation finale.
+      </p>
 
       <ClientPicker error={state.fieldErrors?.clientId?.[0]} />
 
@@ -126,7 +125,7 @@ export function InterventionForm() {
       />
 
       <TextField
-        label="Prix convenu (€, facultatif)"
+        label="Prix indicatif (€, facultatif)"
         name="price"
         type="number"
         min="0"
@@ -134,8 +133,8 @@ export function InterventionForm() {
         error={state.fieldErrors?.price?.[0]}
       />
 
-      <SubmitButton pendingLabel="Création...">
-        Créer l&rsquo;intervention
+      <SubmitButton pendingLabel="Envoi...">
+        Envoyer la proposition au client
       </SubmitButton>
     </form>
   );

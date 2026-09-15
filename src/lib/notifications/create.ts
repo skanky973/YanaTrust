@@ -15,7 +15,7 @@ export async function createNotification(
     type: string;
     title: string;
     body?: string;
-    interventionId: string;
+    interventionId?: string;
   },
 ) {
   const { error } = await supabase.from("notifications").insert({
@@ -23,7 +23,7 @@ export async function createNotification(
     type,
     title,
     body,
-    intervention_id: interventionId,
+    intervention_id: interventionId ?? null,
   });
 
   if (error) {

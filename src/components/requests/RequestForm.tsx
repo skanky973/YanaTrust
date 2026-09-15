@@ -85,6 +85,20 @@ export function RequestForm() {
         error={state.fieldErrors?.desiredDate?.[0]}
       />
 
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="photos" className="text-sm font-medium text-brand-ink">
+          Photos (facultatif, 4 maximum)
+        </label>
+        <input
+          id="photos"
+          name="photos"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-sm text-brand-ink file:mr-3 file:rounded-lg file:border-0 file:bg-brand-green-dark file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-brand-cream"
+        />
+      </div>
+
       <SubmitButton pendingLabel="Publication...">
         Publier la demande
       </SubmitButton>

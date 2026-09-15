@@ -19,6 +19,10 @@ export default function PublierPage() {
       <LinkButton href="/publier/demande" variant="secondary">
         Publier une demande
       </LinkButton>
+
+      <LinkButton href="/demandes" variant="secondary">
+        Parcourir les demandes ouvertes
+      </LinkButton>
     </div>
   );
 }
