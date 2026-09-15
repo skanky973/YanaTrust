@@ -3,12 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import type { Intervention, InterventionStatusHistory } from "@/lib/supabase/database.types";
 
 export type InterventionWithParties = Intervention & {
-  client: { id: string; first_name: string; last_name: string; phone: string | null } | null;
+  client: { id: string; first_name: string; last_name: string } | null;
   provider: { id: string; first_name: string; last_name: string } | null;
 };
 
+// Le téléphone du client n'est jamais lu ici : la fiche intervention utilise
+// intervention.client_phone (l'instantané propre à l'intervention, avec sa
+// propre RLS restreinte aux participants), pas le profil public du client.
 const PARTIES_SELECT =
-  "*, client:profiles!interventions_client_id_fkey(id, first_name, last_name, phone), provider:profiles!interventions_provider_id_fkey(id, first_name, last_name)";
+  "*, client:profiles!interventions_client_id_fkey(id, first_name, last_name), provider:profiles!interventions_provider_id_fkey(id, first_name, last_name)";
 
 export async function getMyInterventionsAsProvider({
   status,

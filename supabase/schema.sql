@@ -884,10 +884,14 @@ create policy "Participants can view their interventions"
   on public.interventions for select
   using (provider_id = auth.uid() or client_id = auth.uid());
 
+-- Seul le prestataire crée des interventions (aucun flux client-initié dans
+-- l'app) : la policy est resserrée en conséquence, en défense en profondeur
+-- avec la vérification is_provider faite côté application.
 drop policy if exists "Provider or client can create interventions" on public.interventions;
-create policy "Provider or client can create interventions"
+drop policy if exists "Provider can create interventions" on public.interventions;
+create policy "Provider can create interventions"
   on public.interventions for insert
-  with check (provider_id = auth.uid() or client_id = auth.uid());
+  with check (provider_id = auth.uid());
 
 drop policy if exists "Participants can update their interventions" on public.interventions;
 create policy "Participants can update their interventions"
@@ -985,15 +989,23 @@ create policy "Users can update own notifications"
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+-- Correctif sécurité : la policy précédente vérifiait seulement que l'auteur
+-- était participant de l'intervention, sans jamais contraindre user_id — ce
+-- qui permettait d'envoyer une fausse notification à n'importe qui. Elle
+-- doit obligatoirement cibler l'AUTRE participant de cette même intervention.
 drop policy if exists "Participants can create notifications for their interventions" on public.notifications;
-create policy "Participants can create notifications for their interventions"
+drop policy if exists "Participants can create notifications for the other party" on public.notifications;
+create policy "Participants can create notifications for the other party"
   on public.notifications for insert
   with check (
     intervention_id is not null
     and exists (
       select 1 from public.interventions i
       where i.id = intervention_id
-        and (i.provider_id = auth.uid() or i.client_id = auth.uid())
+        and (
+          (i.provider_id = auth.uid() and i.client_id = user_id)
+          or (i.client_id = auth.uid() and i.provider_id = user_id)
+        )
     )
   );
 

@@ -52,6 +52,20 @@ export async function createIntervention(
   }
 
   const { supabase, userId } = await requireCurrentUser();
+
+  // Seul un compte passé en mode prestataire peut planifier une intervention
+  // pour un client : empêche un utilisateur quelconque de fabriquer un faux
+  // rendez-vous au nom d'un autre utilisateur.
+  const { data: actingProfile } = await supabase
+    .from("profiles")
+    .select("is_provider")
+    .eq("id", userId)
+    .single();
+
+  if (!actingProfile?.is_provider) {
+    return { error: "Seul un compte prestataire peut créer une intervention." };
+  }
+
   const {
     clientId,
     title,
