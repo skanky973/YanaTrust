@@ -13,12 +13,14 @@ import {
   CalendarCheck,
   Search,
   FileCheck,
+  ShieldAlert,
 } from "lucide-react";
 import { getCurrentProfile } from "@/lib/profiles/queries";
 import { getProviderRatingSummary } from "@/lib/reviews/queries";
 import { getProviderTrustScore } from "@/lib/trust/queries";
 import { getInterventionsAwaitingMyValidation } from "@/lib/interventions/queries";
 import { getUnreadNotificationCount } from "@/lib/notifications/queries";
+import { getPendingReportCount } from "@/lib/moderation/queries";
 import { createClient } from "@/lib/supabase/server";
 import { RatingBadge } from "@/components/reviews/RatingBadge";
 import { TrustScoreBadge } from "@/components/trust/TrustScoreBadge";
@@ -51,13 +53,24 @@ export default async function ProfilPage() {
       ])
     : [null, null];
 
-  const [awaitingValidation, unreadCount] = await Promise.all([
+  const [awaitingValidation, unreadCount, pendingReportCount] = await Promise.all([
     getInterventionsAwaitingMyValidation(),
     getUnreadNotificationCount(),
+    profile.is_admin ? getPendingReportCount() : Promise.resolve(0),
   ]);
 
   const menuItems = [
     { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
+    ...(profile.is_admin
+      ? [
+          {
+            href: "/admin/signalements",
+            label: "Signalements",
+            icon: ShieldAlert,
+            badge: pendingReportCount,
+          },
+        ]
+      : []),
     ...(profile.is_provider
       ? [
           { href: "/planning", label: "Mon planning", icon: Calendar },

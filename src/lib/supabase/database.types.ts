@@ -17,6 +17,7 @@ export type Database = {
           is_provider: boolean;
           phone_verified: boolean;
           identity_verified: boolean;
+          is_admin: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -31,6 +32,7 @@ export type Database = {
           is_provider?: boolean;
           phone_verified?: boolean;
           identity_verified?: boolean;
+          is_admin?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -45,6 +47,7 @@ export type Database = {
           is_provider?: boolean;
           phone_verified?: boolean;
           identity_verified?: boolean;
+          is_admin?: boolean;
           created_at?: string;
           updated_at?: string;
         };

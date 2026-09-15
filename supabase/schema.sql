@@ -1681,3 +1681,78 @@ create policy "Client can delete request photos"
       where r.id::text = (storage.foldername(name))[1] and r.client_id = auth.uid()
     )
   );
+
+-- ============================================================================
+-- Phase 10 : Back-office de modération (administrateurs)
+-- ============================================================================
+-- Ajoute un rôle administrateur (is_admin), protégé comme phone_verified /
+-- identity_verified (uniquement modifiable en service_role, jamais par
+-- l'utilisateur lui-même). Un administrateur peut consulter et traiter les
+-- signalements (table reports, déjà en place depuis la Phase 6), ainsi que
+-- voir le contenu ciblé (profil, service ou message) même s'il n'y aurait
+-- normalement pas accès.
+-- ----------------------------------------------------------------------------
+alter table public.profiles add column if not exists is_admin boolean not null default false;
+
+-- Redéfinit le trigger de la Phase 1 pour protéger aussi is_admin.
+create or replace function public.handle_profile_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.role() <> 'service_role' then
+    new.phone_verified := old.phone_verified;
+    new.identity_verified := old.identity_verified;
+    new.is_admin := old.is_admin;
+  end if;
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+-- Fonction technique (même logique que has_applied_to_request) : évite une
+-- récursion RLS si une policy sur profiles devait un jour vérifier is_admin,
+-- et permet aux policies d'autres tables de vérifier le statut admin sans
+-- dépendre des policies SELECT de profiles.
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((select p.is_admin from public.profiles p where p.id = auth.uid()), false);
+$$;
+
+drop policy if exists "Admins can view all reports" on public.reports;
+create policy "Admins can view all reports"
+  on public.reports for select
+  using (public.is_admin());
+
+drop policy if exists "Admins can update reports" on public.reports;
+create policy "Admins can update reports"
+  on public.reports for update
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- Un admin doit pouvoir voir/archiver un service signalé même s'il est déjà
+-- archivé ou n'appartient pas à l'admin.
+drop policy if exists "Admins can view all services" on public.services;
+create policy "Admins can view all services"
+  on public.services for select
+  using (public.is_admin());
+
+drop policy if exists "Admins can update any service" on public.services;
+create policy "Admins can update any service"
+  on public.services for update
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- Un admin doit pouvoir lire un message signalé même s'il n'est pas
+-- participant de la conversation.
+drop policy if exists "Admins can view all messages" on public.messages;
+create policy "Admins can view all messages"
+  on public.messages for select
+  using (public.is_admin());
