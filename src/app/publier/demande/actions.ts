@@ -51,7 +51,6 @@ export async function createRequest(
     .single();
 
   if (error || !created) {
-    console.error("createRequest:", error?.message, error?.code, error?.details, error?.hint);
     return { error: "Impossible de publier la demande." };
   }
 

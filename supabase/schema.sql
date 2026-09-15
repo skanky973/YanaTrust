@@ -1289,6 +1289,27 @@ create policy "Client and applicant can update applications"
     or exists (select 1 from public.requests r where r.id = request_id and r.client_id = auth.uid())
   );
 
+-- Fonction technique pour éviter une récursion infinie de policies : la
+-- policy SELECT de "requests" a besoin de savoir si l'utilisateur a postulé
+-- (table request_applications), mais les policies de request_applications
+-- interrogent elles-mêmes "requests" (pour vérifier r.client_id). Une requête
+-- directe des deux côtés provoque une boucle ("infinite recursion detected
+-- in policy for relation requests", 42P17). Une fonction security definer
+-- interroge request_applications en tant que propriétaire de la table (qui
+-- n'est pas soumis à ses RLS), ce qui casse la boucle.
+create or replace function public.has_applied_to_request(p_request_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.request_applications a
+    where a.request_id = p_request_id and a.provider_id = auth.uid()
+  );
+$$;
+
 -- Un prestataire voit une demande soit parce qu'elle est ouverte, soit parce
 -- qu'il y a déjà postulé (utile une fois la demande passée en discussion).
 drop policy if exists "Providers can view open requests or ones they applied to" on public.requests;
@@ -1296,10 +1317,7 @@ create policy "Providers can view open requests or ones they applied to"
   on public.requests for select
   using (
     status = 'open'
-    or exists (
-      select 1 from public.request_applications a
-      where a.request_id = requests.id and a.provider_id = auth.uid()
-    )
+    or public.has_applied_to_request(requests.id)
   );
 
 -- La visibilité des photos d'une demande suit celle de la demande elle-même
@@ -1314,10 +1332,7 @@ create policy "Same visibility as the parent request"
         and (
           r.client_id = auth.uid()
           or r.status = 'open'
-          or exists (
-            select 1 from public.request_applications a
-            where a.request_id = r.id and a.provider_id = auth.uid()
-          )
+          or public.has_applied_to_request(r.id)
         )
     )
   );
@@ -1640,10 +1655,7 @@ create policy "Same visibility as parent request for storage"
         and (
           r.client_id = auth.uid()
           or r.status = 'open'
-          or exists (
-            select 1 from public.request_applications a
-            where a.request_id = r.id and a.provider_id = auth.uid()
-          )
+          or public.has_applied_to_request(r.id)
         )
     )
   );

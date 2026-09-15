@@ -1,0 +1,14 @@
+Corrige une recursion infinie de policies RLS entre requests et request_applications
+
+La policy SELECT de requests interrogeait request_applications, et les
+policies de request_applications interrogeaient requests en retour, ce qui
+provoquait une boucle infinie (erreur Postgres 42P17) des que la table
+requests etait consultee. Introduit une fonction technique
+has_applied_to_request() en security definer, qui interroge
+request_applications sans redeclencher ses RLS, et l utilise partout ou ce
+controle etait fait en ligne (policy sur requests, sur request_photos, et
+sur le bucket de stockage request-photos).
+
+Retire aussi le log de diagnostic temporaire ajoute pour identifier ce bug.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
