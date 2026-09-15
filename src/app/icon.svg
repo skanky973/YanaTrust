@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240">
+  <defs>
+    <clipPath id="icon-left-half">
+      <rect x="0" y="0" width="100" height="240" />
+    </clipPath>
+    <clipPath id="icon-right-half">
+      <rect x="100" y="0" width="100" height="240" />
+    </clipPath>
+  </defs>
+
+  <path
+    d="M100,232 C100,232 18,138 18,90 A82,82 0 1,1 182,90 C182,138 100,232 100,232 Z"
+    fill="#11633B"
+    clip-path="url(#icon-left-half)"
+  />
+  <path
+    d="M100,232 C100,232 18,138 18,90 A82,82 0 1,1 182,90 C182,138 100,232 100,232 Z"
+    fill="#FFB703"
+    clip-path="url(#icon-right-half)"
+  />
+
+  <path
+    d="M62,92 L90,118 L140,60"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="16"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
