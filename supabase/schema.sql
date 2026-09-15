@@ -1128,16 +1128,10 @@ alter table public.requests add constraint requests_status_valid check (
   )
 );
 
-drop policy if exists "Providers can view open requests or ones they applied to" on public.requests;
-create policy "Providers can view open requests or ones they applied to"
-  on public.requests for select
-  using (
-    status = 'open'
-    or exists (
-      select 1 from public.request_applications a
-      where a.request_id = requests.id and a.provider_id = auth.uid()
-    )
-  );
+-- Note : la policy "Providers can view open requests or ones they applied to"
+-- est créée plus bas dans ce fichier, une fois la table request_applications
+-- elle-même créée (elle ne peut pas référencer une table qui n'existe pas
+-- encore au moment de la création de la policy).
 
 -- ----------------------------------------------------------------------------
 -- Table: request_photos
@@ -1153,23 +1147,9 @@ create index if not exists request_photos_request_id_idx on public.request_photo
 
 alter table public.request_photos enable row level security;
 
-drop policy if exists "Same visibility as the parent request" on public.request_photos;
-create policy "Same visibility as the parent request"
-  on public.request_photos for select
-  using (
-    exists (
-      select 1 from public.requests r
-      where r.id = request_id
-        and (
-          r.client_id = auth.uid()
-          or r.status = 'open'
-          or exists (
-            select 1 from public.request_applications a
-            where a.request_id = r.id and a.provider_id = auth.uid()
-          )
-        )
-    )
-  );
+-- Note : la policy SELECT "Same visibility as the parent request" est créée
+-- plus bas, une fois la table request_applications elle-même créée (elle ne
+-- peut pas référencer une table qui n'existe pas encore).
 
 drop policy if exists "Client can add photos to own request" on public.request_photos;
 create policy "Client can add photos to own request"
@@ -1307,6 +1287,39 @@ create policy "Client and applicant can update applications"
   with check (
     provider_id = auth.uid()
     or exists (select 1 from public.requests r where r.id = request_id and r.client_id = auth.uid())
+  );
+
+-- Un prestataire voit une demande soit parce qu'elle est ouverte, soit parce
+-- qu'il y a déjà postulé (utile une fois la demande passée en discussion).
+drop policy if exists "Providers can view open requests or ones they applied to" on public.requests;
+create policy "Providers can view open requests or ones they applied to"
+  on public.requests for select
+  using (
+    status = 'open'
+    or exists (
+      select 1 from public.request_applications a
+      where a.request_id = requests.id and a.provider_id = auth.uid()
+    )
+  );
+
+-- La visibilité des photos d'une demande suit celle de la demande elle-même
+-- (client propriétaire, demande ouverte, ou déjà candidat sur cette demande).
+drop policy if exists "Same visibility as the parent request" on public.request_photos;
+create policy "Same visibility as the parent request"
+  on public.request_photos for select
+  using (
+    exists (
+      select 1 from public.requests r
+      where r.id = request_id
+        and (
+          r.client_id = auth.uid()
+          or r.status = 'open'
+          or exists (
+            select 1 from public.request_applications a
+            where a.request_id = r.id and a.provider_id = auth.uid()
+          )
+        )
+    )
   );
 
 -- ----------------------------------------------------------------------------
