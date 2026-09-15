@@ -1,0 +1,58 @@
+import { NextResponse } from "next/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+
+// Appelé une fois par jour par Vercel Cron (voir vercel.json). Envoie un
+// rappel aux deux parties pour chaque intervention confirmée prévue le
+// lendemain, et marque reminder_sent pour ne jamais rappeler deux fois.
+export async function GET(request: Request) {
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+  }
+
+  const supabase = createServiceRoleClient();
+
+  const tomorrow = new Date();
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  const tomorrowDate = tomorrow.toISOString().slice(0, 10);
+
+  const { data: interventions, error } = await supabase
+    .from("interventions")
+    .select("id, provider_id, client_id, title, scheduled_date, start_time")
+    .eq("status", "confirmed")
+    .eq("reminder_sent", false)
+    .eq("scheduled_date", tomorrowDate);
+
+  if (error) {
+    console.error("cron/reminders:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  for (const intervention of interventions ?? []) {
+    const body = `${intervention.title} — demain à ${intervention.start_time.slice(0, 5)}.`;
+
+    await supabase.from("notifications").insert([
+      {
+        user_id: intervention.client_id,
+        type: "upcoming_intervention",
+        title: "Rappel : intervention demain",
+        body,
+        intervention_id: intervention.id,
+      },
+      {
+        user_id: intervention.provider_id,
+        type: "upcoming_intervention",
+        title: "Rappel : intervention demain",
+        body,
+        intervention_id: intervention.id,
+      },
+    ]);
+
+    await supabase
+      .from("interventions")
+      .update({ reminder_sent: true })
+      .eq("id", intervention.id);
+  }
+
+  return NextResponse.json({ remindersSent: interventions?.length ?? 0 });
+}

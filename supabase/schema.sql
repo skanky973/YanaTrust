@@ -1756,3 +1756,20 @@ drop policy if exists "Admins can view all messages" on public.messages;
 create policy "Admins can view all messages"
   on public.messages for select
   using (public.is_admin());
+
+-- ============================================================================
+-- Phase 11 : Rappel automatique avant intervention
+-- ============================================================================
+-- reminder_sent suit si le rappel du jour précédent a déjà été envoyé pour
+-- cette intervention, afin que la tâche planifiée (Vercel Cron, une fois par
+-- jour) ne notifie jamais deux fois pour la même intervention. Remis à false
+-- automatiquement par rescheduleIntervention en cas de reprogrammation.
+-- Écrit uniquement par le serveur (route /api/cron/reminders, via la clé
+-- service_role qui contourne les RLS) : aucune policy supplémentaire requise,
+-- les policies existantes sur interventions/notifications continuent de
+-- s'appliquer normalement aux utilisateurs.
+-- ----------------------------------------------------------------------------
+alter table public.interventions add column if not exists reminder_sent boolean not null default false;
+create index if not exists interventions_reminder_pending_idx
+  on public.interventions (scheduled_date)
+  where status = 'confirmed' and reminder_sent = false;

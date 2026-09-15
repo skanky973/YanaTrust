@@ -72,6 +72,7 @@ export async function rescheduleIntervention(
       start_time: startTime,
       duration_minutes: durationMinutes,
       status: "scheduled",
+      reminder_sent: false,
     })
     .eq("id", interventionId)
     .eq("provider_id", userId);

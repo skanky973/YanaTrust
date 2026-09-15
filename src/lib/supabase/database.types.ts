@@ -338,6 +338,7 @@ export type Database = {
           client_reported_problem: boolean;
           client_comment: string | null;
           client_rating: number | null;
+          reminder_sent: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -366,6 +367,7 @@ export type Database = {
           client_reported_problem?: boolean;
           client_comment?: string | null;
           client_rating?: number | null;
+          reminder_sent?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -394,6 +396,7 @@ export type Database = {
           client_reported_problem?: boolean;
           client_comment?: string | null;
           client_rating?: number | null;
+          reminder_sent?: boolean;
           created_at?: string;
           updated_at?: string;
         };
