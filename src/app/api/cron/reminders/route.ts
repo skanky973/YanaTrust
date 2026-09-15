@@ -6,7 +6,8 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 // lendemain, et marque reminder_sent pour ne jamais rappeler deux fois.
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
 
