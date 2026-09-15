@@ -5,6 +5,8 @@ import { getRecommendedProviders } from "@/lib/profiles/recommended";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { RecommendedProviderCard } from "@/components/home/RecommendedProviderCard";
 import { LinkButton } from "@/components/ui/Button";
+import { YanaTrustMark } from "@/components/brand/YanaTrustMark";
+import { YanaTrustWordmark } from "@/components/brand/YanaTrustWordmark";
 
 export default async function AccueilPage() {
   const supabase = await createClient();
@@ -18,12 +20,8 @@ export default async function AccueilPage() {
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-green-dark text-base font-bold text-brand-cream">
-            Y
-          </div>
-          <span className="text-lg font-bold text-brand-green-dark">
-            YanaTrust
-          </span>
+          <YanaTrustMark className="h-9 w-9" />
+          <YanaTrustWordmark className="text-lg" />
         </div>
         {user ? (
           <Link
