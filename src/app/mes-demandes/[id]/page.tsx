@@ -39,13 +39,7 @@ export default async function ModifierDemandePage({
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-2xl font-bold text-brand-green-dark">
-        Modifier la demande
-      </h1>
-
-      <EditRequestForm request={request} />
-
-      <div className="flex flex-col gap-3">
+      <div id="candidatures" className="flex flex-col gap-3 scroll-mt-4">
         <h2 className="text-lg font-semibold text-brand-ink">
           Candidatures ({applications.length})
         </h2>
@@ -59,6 +53,12 @@ export default async function ModifierDemandePage({
           ))
         )}
       </div>
+
+      <h1 className="text-2xl font-bold text-brand-green-dark">
+        Modifier la demande
+      </h1>
+
+      <EditRequestForm request={request} />
     </div>
   );
 }

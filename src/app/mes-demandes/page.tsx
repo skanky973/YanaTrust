@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getMyRequests } from "@/lib/requests/queries";
+import { getApplicationCountsForRequests } from "@/lib/applications/queries";
 import { createClient } from "@/lib/supabase/server";
 import { MyRequestCard } from "@/components/requests/MyRequestCard";
 import { LinkButton } from "@/components/ui/Button";
@@ -20,6 +21,9 @@ export default async function MesDemandesPage() {
   }
 
   const requests = await getMyRequests();
+  const applicationCounts = await getApplicationCountsForRequests(
+    requests.map((r) => r.id),
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
@@ -48,7 +52,11 @@ export default async function MesDemandesPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {requests.map((request) => (
-            <MyRequestCard key={request.id} request={request} />
+            <MyRequestCard
+              key={request.id}
+              request={request}
+              applicationCount={applicationCounts[request.id] ?? 0}
+            />
           ))}
         </div>
       )}

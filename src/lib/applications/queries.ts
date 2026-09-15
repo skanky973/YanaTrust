@@ -80,6 +80,29 @@ export async function getMyApplications(): Promise<ApplicationWithRequest[]> {
   return data as unknown as ApplicationWithRequest[];
 }
 
+export async function getApplicationCountsForRequests(
+  requestIds: string[],
+): Promise<Record<string, number>> {
+  if (requestIds.length === 0) return {};
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("request_applications")
+    .select("request_id")
+    .in("request_id", requestIds);
+
+  if (error) {
+    console.error("getApplicationCountsForRequests:", error.message);
+    return {};
+  }
+
+  const counts: Record<string, number> = {};
+  for (const row of data) {
+    counts[row.request_id] = (counts[row.request_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export async function getApplicationByConversationId(
   conversationId: string,
 ): Promise<RequestApplication | null> {
