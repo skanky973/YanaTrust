@@ -14,6 +14,9 @@ import {
   Search,
   FileCheck,
   ShieldAlert,
+  Car,
+  CreditCard,
+  Ticket,
 } from "lucide-react";
 import { getCurrentProfile } from "@/lib/profiles/queries";
 import { getProviderRatingSummary } from "@/lib/reviews/queries";
@@ -79,6 +82,14 @@ export default async function ProfilPage() {
         ]
       : []),
     { href: "/mes-interventions", label: "Mes interventions", icon: CalendarCheck },
+    { href: "/covoiturage", label: "Covoiturage", icon: Car },
+    ...(profile.is_provider
+      ? [
+          { href: "/mes-trajets", label: "Mes trajets", icon: Car },
+          { href: "/profil/paiements", label: "Paiements", icon: CreditCard },
+        ]
+      : []),
+    { href: "/mes-reservations", label: "Mes réservations", icon: Ticket },
     { href: "/profil/modifier", label: "Modifier mon profil", icon: Pencil },
     { href: "/mes-services", label: "Mes services", icon: Wrench },
     { href: "/mes-demandes", label: "Mes demandes", icon: ClipboardList },

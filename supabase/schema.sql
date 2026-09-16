@@ -1773,3 +1773,333 @@ alter table public.interventions add column if not exists reminder_sent boolean 
 create index if not exists interventions_reminder_pending_idx
   on public.interventions (scheduled_date)
   where status = 'confirmed' and reminder_sent = false;
+
+-- ============================================================================
+-- Phase 12 : Covoiturage avec paiement en ligne (Stripe Connect)
+-- ============================================================================
+-- Un conducteur publie un trajet (ville de départ/arrivée, date, places,
+-- prix par place). Un passager réserve une ou plusieurs places et paie sur
+-- l'application ; l'argent est reversé au conducteur via Stripe Connect,
+-- moins une commission plateforme. Les places sont réservées de façon
+-- atomique (verrouillage de ligne) au moment de la réservation, pas au
+-- moment du paiement, pour ne jamais survendre un trajet.
+
+-- ----------------------------------------------------------------------------
+-- Table: stripe_accounts
+-- Compte Stripe Connect (Express) d'un conducteur, permettant de recevoir
+-- des paiements. payouts_enabled/details_submitted ne sont mis à jour que
+-- par le webhook Stripe (service_role, contourne les RLS) : jamais par
+-- l'utilisateur lui-même.
+-- ----------------------------------------------------------------------------
+create table if not exists public.stripe_accounts (
+  id uuid primary key references public.profiles (id) on delete cascade,
+  stripe_account_id text not null unique,
+  payouts_enabled boolean not null default false,
+  details_submitted boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.stripe_accounts enable row level security;
+
+drop policy if exists "Users can view own stripe account" on public.stripe_accounts;
+create policy "Users can view own stripe account"
+  on public.stripe_accounts for select
+  using (id = auth.uid());
+
+drop policy if exists "Users can create own stripe account" on public.stripe_accounts;
+create policy "Users can create own stripe account"
+  on public.stripe_accounts for insert
+  with check (id = auth.uid());
+
+-- ----------------------------------------------------------------------------
+-- Table: carpool_trips
+-- ----------------------------------------------------------------------------
+create table if not exists public.carpool_trips (
+  id uuid primary key default gen_random_uuid(),
+  driver_id uuid not null references public.profiles (id) on delete cascade,
+  origin_city text not null,
+  destination_city text not null,
+  departure_date date not null,
+  departure_time time not null,
+  seats_total integer not null,
+  seats_available integer not null,
+  price_per_seat numeric(10, 2) not null,
+  description text,
+  status text not null default 'open',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint carpool_trips_seats_positive check (seats_total > 0),
+  constraint carpool_trips_seats_available_range check (seats_available between 0 and seats_total),
+  constraint carpool_trips_price_nonnegative check (price_per_seat >= 0),
+  constraint carpool_trips_status_valid check (status in ('open', 'full', 'completed', 'cancelled'))
+);
+
+create index if not exists carpool_trips_driver_id_idx on public.carpool_trips (driver_id);
+create index if not exists carpool_trips_departure_date_idx on public.carpool_trips (departure_date);
+create index if not exists carpool_trips_status_idx on public.carpool_trips (status);
+
+create or replace function public.handle_carpool_trip_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists before_carpool_trip_update on public.carpool_trips;
+create trigger before_carpool_trip_update
+  before update on public.carpool_trips
+  for each row execute function public.handle_carpool_trip_update();
+
+-- ----------------------------------------------------------------------------
+-- Table: carpool_bookings
+-- ----------------------------------------------------------------------------
+create table if not exists public.carpool_bookings (
+  id uuid primary key default gen_random_uuid(),
+  trip_id uuid not null references public.carpool_trips (id) on delete cascade,
+  passenger_id uuid not null references public.profiles (id) on delete cascade,
+  seats_booked integer not null,
+  price_total numeric(10, 2) not null,
+  platform_fee numeric(10, 2) not null default 0,
+  status text not null default 'pending_payment',
+  stripe_checkout_session_id text,
+  stripe_payment_intent_id text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint carpool_bookings_seats_positive check (seats_booked > 0),
+  constraint carpool_bookings_status_valid check (
+    status in ('pending_payment', 'paid', 'cancelled', 'refunded')
+  )
+);
+
+create index if not exists carpool_bookings_trip_id_idx on public.carpool_bookings (trip_id);
+create index if not exists carpool_bookings_passenger_id_idx on public.carpool_bookings (passenger_id);
+
+create or replace function public.handle_carpool_booking_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists before_carpool_booking_update on public.carpool_bookings;
+create trigger before_carpool_booking_update
+  before update on public.carpool_bookings
+  for each row execute function public.handle_carpool_booking_update();
+
+-- Fonction technique (même principe que has_applied_to_request) : évite la
+-- récursion RLS entre carpool_trips et carpool_bookings.
+create or replace function public.is_trip_passenger(p_trip_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.carpool_bookings b
+    where b.trip_id = p_trip_id
+      and b.passenger_id = auth.uid()
+      and b.status in ('pending_payment', 'paid')
+  );
+$$;
+
+create or replace function public.is_trip_driver(p_trip_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.carpool_trips t
+    where t.id = p_trip_id and t.driver_id = auth.uid()
+  );
+$$;
+
+alter table public.carpool_trips enable row level security;
+
+drop policy if exists "Trips are viewable by everyone" on public.carpool_trips;
+create policy "Trips are viewable by everyone"
+  on public.carpool_trips for select
+  using (
+    status <> 'cancelled'
+    or driver_id = auth.uid()
+    or public.is_trip_passenger(id)
+  );
+
+drop policy if exists "Providers can publish trips" on public.carpool_trips;
+create policy "Providers can publish trips"
+  on public.carpool_trips for insert
+  with check (
+    driver_id = auth.uid()
+    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_provider = true)
+  );
+
+drop policy if exists "Drivers can update own trips" on public.carpool_trips;
+create policy "Drivers can update own trips"
+  on public.carpool_trips for update
+  using (driver_id = auth.uid())
+  with check (driver_id = auth.uid());
+
+alter table public.carpool_bookings enable row level security;
+
+drop policy if exists "Passenger and driver can view bookings" on public.carpool_bookings;
+create policy "Passenger and driver can view bookings"
+  on public.carpool_bookings for select
+  using (passenger_id = auth.uid() or public.is_trip_driver(trip_id));
+
+-- L'insertion normale (with check passenger_id = auth.uid()) n'est là qu'en
+-- défense en profondeur : en pratique, toute réservation passe par la
+-- fonction create_carpool_booking (security definer) ci-dessous, qui gère
+-- l'atomicité de la décrémentation des places.
+drop policy if exists "Passengers can create own bookings" on public.carpool_bookings;
+create policy "Passengers can create own bookings"
+  on public.carpool_bookings for insert
+  with check (passenger_id = auth.uid());
+
+-- Un passager ne peut annuler (statut -> cancelled) que sa propre réservation
+-- tant qu'elle n'est pas encore payée ; toute autre modification passe par
+-- le webhook Stripe (service_role, contourne les RLS).
+drop policy if exists "Passengers can cancel own pending booking" on public.carpool_bookings;
+create policy "Passengers can cancel own pending booking"
+  on public.carpool_bookings for update
+  using (passenger_id = auth.uid() and status = 'pending_payment')
+  with check (passenger_id = auth.uid() and status = 'cancelled');
+
+-- ----------------------------------------------------------------------------
+-- Réservation atomique : verrouille le trajet, vérifie les places restantes,
+-- les décrémente, et crée la réservation en une seule transaction (empêche
+-- deux passagers de réserver simultanément la ou les dernières places).
+-- ----------------------------------------------------------------------------
+create or replace function public.create_carpool_booking(p_trip_id uuid, p_seats integer)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_trip record;
+  v_price_total numeric(10, 2);
+  v_platform_fee numeric(10, 2);
+  v_booking_id uuid;
+begin
+  if p_seats is null or p_seats < 1 then
+    raise exception 'Nombre de places invalide.';
+  end if;
+
+  select * into v_trip from public.carpool_trips where id = p_trip_id for update;
+
+  if v_trip is null then
+    raise exception 'Trajet introuvable.';
+  end if;
+
+  if v_trip.driver_id = auth.uid() then
+    raise exception 'Vous ne pouvez pas réserver votre propre trajet.';
+  end if;
+
+  if v_trip.status <> 'open' then
+    raise exception 'Ce trajet n''accepte plus de réservations.';
+  end if;
+
+  if v_trip.seats_available < p_seats then
+    raise exception 'Il ne reste pas assez de places sur ce trajet.';
+  end if;
+
+  v_price_total := v_trip.price_per_seat * p_seats;
+  v_platform_fee := round(v_price_total * 0.10, 2);
+
+  update public.carpool_trips
+  set
+    seats_available = seats_available - p_seats,
+    status = case when seats_available - p_seats <= 0 then 'full' else status end
+  where id = p_trip_id;
+
+  insert into public.carpool_bookings (
+    trip_id, passenger_id, seats_booked, price_total, platform_fee, status
+  ) values (
+    p_trip_id, auth.uid(), p_seats, v_price_total, v_platform_fee, 'pending_payment'
+  )
+  returning id into v_booking_id;
+
+  return v_booking_id;
+end;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- Annulation d'une réservation non payée : restitue les places au trajet.
+-- Appelée par le passager (bouton "Annuler") ou par le webhook Stripe quand
+-- une session de paiement expire sans avoir été payée.
+-- ----------------------------------------------------------------------------
+create or replace function public.cancel_carpool_booking(p_booking_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_booking record;
+begin
+  select * into v_booking from public.carpool_bookings where id = p_booking_id for update;
+
+  if v_booking is null or v_booking.status <> 'pending_payment' then
+    return;
+  end if;
+
+  -- auth.uid() vaut null quand la fonction est appelée par le webhook Stripe
+  -- (clé service_role, aucun utilisateur connecté) : c'est le seul autre cas
+  -- autorisé, pour qu'une session de paiement expirée puisse être libérée
+  -- automatiquement. Un utilisateur authentifié ne peut annuler que la sienne.
+  if auth.uid() is not null and v_booking.passenger_id <> auth.uid() then
+    raise exception 'Non autorisé.';
+  end if;
+
+  update public.carpool_bookings set status = 'cancelled' where id = p_booking_id;
+
+  update public.carpool_trips
+  set
+    seats_available = least(seats_total, seats_available + v_booking.seats_booked),
+    status = case when status = 'full' then 'open' else status end
+  where id = v_booking.trip_id;
+end;
+$$;
+
+comment on function public.cancel_carpool_booking is 'Annule une réservation non payée et restitue ses places au trajet. Appelable par le passager (via RLS) ou par le webhook Stripe (service_role) en cas d''expiration de la session de paiement.';
+
+-- Le webhook Stripe (service_role, contourne les RLS) notifie conducteur et
+-- passager quand un paiement de covoiturage est confirmé.
+alter table public.notifications drop constraint if exists notifications_type_valid;
+alter table public.notifications add constraint notifications_type_valid check (
+  type in (
+    'new_request', 'request_accepted', 'appointment_changed', 'upcoming_intervention',
+    'cancelled', 'completed', 'validation_requested', 'client_validated', 'client_problem',
+    'new_application', 'application_accepted', 'application_refused', 'new_message',
+    'new_slot_proposal', 'slot_accepted', 'slot_refused', 'modification_requested',
+    'provider_proposal', 'booking_confirmed', 'booking_cancelled',
+    'carpool_booking_paid', 'carpool_trip_cancelled'
+  )
+);
+
+-- Permet au conducteur de notifier ses passagers (et inversement) sans passer
+-- par le service_role : la relation est vérifiée via une réservation commune.
+drop policy if exists "Carpool participants can notify each other" on public.notifications;
+create policy "Carpool participants can notify each other"
+  on public.notifications for insert
+  with check (
+    exists (
+      select 1 from public.carpool_bookings b
+      join public.carpool_trips t on t.id = b.trip_id
+      where (t.driver_id = auth.uid() and b.passenger_id = user_id)
+         or (b.passenger_id = auth.uid() and t.driver_id = user_id)
+    )
+  );

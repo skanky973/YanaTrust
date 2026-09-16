@@ -663,9 +663,135 @@ export type Database = {
         };
         Relationships: [];
       };
+      stripe_accounts: {
+        Row: {
+          id: string;
+          stripe_account_id: string;
+          payouts_enabled: boolean;
+          details_submitted: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          stripe_account_id: string;
+          payouts_enabled?: boolean;
+          details_submitted?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          stripe_account_id?: string;
+          payouts_enabled?: boolean;
+          details_submitted?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      carpool_trips: {
+        Row: {
+          id: string;
+          driver_id: string;
+          origin_city: string;
+          destination_city: string;
+          departure_date: string;
+          departure_time: string;
+          seats_total: number;
+          seats_available: number;
+          price_per_seat: number;
+          description: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          driver_id: string;
+          origin_city: string;
+          destination_city: string;
+          departure_date: string;
+          departure_time: string;
+          seats_total: number;
+          seats_available?: number;
+          price_per_seat: number;
+          description?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          driver_id?: string;
+          origin_city?: string;
+          destination_city?: string;
+          departure_date?: string;
+          departure_time?: string;
+          seats_total?: number;
+          seats_available?: number;
+          price_per_seat?: number;
+          description?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      carpool_bookings: {
+        Row: {
+          id: string;
+          trip_id: string;
+          passenger_id: string;
+          seats_booked: number;
+          price_total: number;
+          platform_fee: number;
+          status: string;
+          stripe_checkout_session_id: string | null;
+          stripe_payment_intent_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          passenger_id: string;
+          seats_booked: number;
+          price_total: number;
+          platform_fee?: number;
+          status?: string;
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          trip_id?: string;
+          passenger_id?: string;
+          seats_booked?: number;
+          price_total?: number;
+          platform_fee?: number;
+          status?: string;
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      create_carpool_booking: {
+        Args: { p_trip_id: string; p_seats: number };
+        Returns: string;
+      };
+      cancel_carpool_booking: {
+        Args: { p_booking_id: string };
+        Returns: undefined;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
@@ -713,3 +839,7 @@ export type RequestApplication =
   Database["public"]["Tables"]["request_applications"]["Row"];
 export type BookingProposal =
   Database["public"]["Tables"]["booking_proposals"]["Row"];
+
+export type StripeAccount = Database["public"]["Tables"]["stripe_accounts"]["Row"];
+export type CarpoolTrip = Database["public"]["Tables"]["carpool_trips"]["Row"];
+export type CarpoolBooking = Database["public"]["Tables"]["carpool_bookings"]["Row"];
