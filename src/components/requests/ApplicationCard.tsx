@@ -35,7 +35,7 @@ export function ApplicationCard({ application }: { application: ApplicationWithP
 
       <p className="text-sm text-brand-ink/70">{application.message}</p>
 
-      <div className="flex flex-wrap gap-3 text-xs text-brand-ink/60">
+      <div className="flex flex-wrap gap-3 text-xs text-brand-ink/70">
         {application.proposed_price !== null ? (
           <span>Prix proposé : {application.proposed_price} €</span>
         ) : null}

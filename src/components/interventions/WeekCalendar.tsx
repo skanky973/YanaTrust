@@ -36,7 +36,7 @@ export function WeekCalendar({
       <div className="flex items-center justify-between rounded-xl bg-white shadow-sm shadow-black/5 p-3">
         <Link
           href={`/planning?vue=planning&affichage=semaine&semaine=${toISODate(prevWeek)}`}
-          className="p-1 text-brand-ink/60"
+          className="p-1 text-brand-ink/70"
           aria-label="Semaine précédente"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -46,7 +46,7 @@ export function WeekCalendar({
         </p>
         <Link
           href={`/planning?vue=planning&affichage=semaine&semaine=${toISODate(nextWeek)}`}
-          className="p-1 text-brand-ink/60"
+          className="p-1 text-brand-ink/70"
           aria-label="Semaine suivante"
         >
           <ChevronRight className="h-5 w-5" />
@@ -61,14 +61,14 @@ export function WeekCalendar({
           <div key={dateStr}>
             <p
               className={`mb-1.5 text-xs font-semibold ${
-                dateStr === todayStr ? "text-brand-green-dark" : "text-brand-ink/50"
+                dateStr === todayStr ? "text-brand-green-dark" : "text-brand-ink/65"
               }`}
             >
               {WEEKDAY_FULL_LABELS[i]} {date.getDate()}
               {dateStr === todayStr ? " · aujourd'hui" : ""}
             </p>
             {dayInterventions.length === 0 ? (
-              <p className="rounded-xl bg-white shadow-sm shadow-black/5 px-4 py-2.5 text-xs text-brand-ink/40">
+              <p className="rounded-xl bg-white shadow-sm shadow-black/5 px-4 py-2.5 text-xs text-brand-ink/65">
                 Rien de prévu
               </p>
             ) : (

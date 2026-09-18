@@ -42,7 +42,7 @@ export default async function MesReservationsPage() {
 
       {bookings.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-8 text-center">
-          <p className="text-sm text-brand-ink/60">
+          <p className="text-sm text-brand-ink/70">
             Vous n&rsquo;avez encore réservé aucun trajet.
           </p>
           <Link
@@ -66,18 +66,18 @@ export default async function MesReservationsPage() {
                     : "Trajet introuvable"}
                 </Link>
                 <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[booking.status] ?? "bg-brand-ink/10 text-brand-ink/60"}`}
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[booking.status] ?? "bg-brand-ink/10 text-brand-ink/70"}`}
                 >
                   {STATUS_LABELS[booking.status] ?? booking.status}
                 </span>
               </div>
               {booking.trip ? (
-                <p className="text-xs text-brand-ink/60">
+                <p className="text-xs text-brand-ink/70">
                   {new Date(`${booking.trip.departure_date}T00:00:00`).toLocaleDateString("fr-FR")}{" "}
                   à {booking.trip.departure_time.slice(0, 5)}
                 </p>
               ) : null}
-              <p className="text-xs text-brand-ink/50">
+              <p className="text-xs text-brand-ink/65">
                 {booking.seats_booked} place{booking.seats_booked > 1 ? "s" : ""} · {booking.price_total} €
               </p>
               {booking.status === "pending_payment" ? (
@@ -95,7 +95,7 @@ export default async function MesReservationsPage() {
                   <button type="submit" className="text-xs font-medium text-red-600 underline">
                     Me désister et être remboursé
                   </button>
-                  <p className="mt-1 text-[10px] text-brand-ink/40">
+                  <p className="mt-1 text-[10px] text-brand-ink/65">
                     Remboursement intégral jusqu&rsquo;à l&rsquo;heure du départ.
                   </p>
                 </form>

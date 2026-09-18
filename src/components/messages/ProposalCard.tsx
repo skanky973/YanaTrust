@@ -60,7 +60,7 @@ export function ProposalCard({
         </span>
       </div>
 
-      <p className="text-xs text-brand-ink/60">{getCategoryLabel(proposal.category)}</p>
+      <p className="text-xs text-brand-ink/70">{getCategoryLabel(proposal.category)}</p>
 
       <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-brand-ink/80">
         <span>
@@ -76,7 +76,7 @@ export function ProposalCard({
         <p className="text-sm text-brand-ink/70">{proposal.description}</p>
       ) : null}
       {proposal.conditions ? (
-        <p className="text-xs text-brand-ink/50">Conditions : {proposal.conditions}</p>
+        <p className="text-xs text-brand-ink/65">Conditions : {proposal.conditions}</p>
       ) : null}
 
       {confirmState.error ? <Alert>{confirmState.error}</Alert> : null}
@@ -129,7 +129,7 @@ export function ProposalCard({
               <textarea
                 name="comment"
                 placeholder="Précisez ce que vous souhaitez modifier..."
-                className="min-h-20 rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+                className="min-h-20 rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
               />
               <SubmitButton pendingLabel="Envoi..." className="self-start px-3 py-1.5 text-sm">
                 Envoyer la demande
@@ -141,7 +141,7 @@ export function ProposalCard({
 
       {isProvider && proposal.status === "pending_provider" ? (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-brand-ink/60">
+          <p className="text-xs text-brand-ink/70">
             Le client a accepté ce créneau. Confirmez pour l&rsquo;ajouter définitivement à
             votre planning.
           </p>
@@ -153,7 +153,7 @@ export function ProposalCard({
 
       {isProvider && proposal.status === "modification_requested" ? (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-brand-ink/60">
+          <p className="text-xs text-brand-ink/70">
             Le client a demandé une modification. Ajustez votre proposition et renvoyez-la.
           </p>
           {resubmitState.error ? <Alert>{resubmitState.error}</Alert> : null}
@@ -266,7 +266,7 @@ export function ProposalCard({
 
       {canCancel ? (
         <form action={cancelProposal.bind(null, proposal.id)}>
-          <button type="submit" className="text-xs font-medium text-brand-ink/40 underline">
+          <button type="submit" className="text-xs font-medium text-brand-ink/65 underline">
             Annuler cette proposition
           </button>
         </form>

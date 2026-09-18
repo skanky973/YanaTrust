@@ -20,6 +20,6 @@ export function getApplicationStatusLabel(value: string): string {
 export function getApplicationStatusColor(value: string): string {
   return (
     STATUS_BY_VALUE.get(value as ApplicationStatus)?.color ??
-    "bg-brand-ink/10 text-brand-ink/60"
+    "bg-brand-ink/10 text-brand-ink/70"
   );
 }

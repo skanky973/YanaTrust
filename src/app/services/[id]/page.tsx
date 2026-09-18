@@ -121,14 +121,14 @@ export default async function ServicePage({
 
       <dl className="grid gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm">
         <div className="flex justify-between">
-          <dt className="text-brand-ink/60">Ville</dt>
+          <dt className="text-brand-ink/70">Ville</dt>
           <dd className="font-medium text-brand-ink">
             {service.city || "—"}
           </dd>
         </div>
         {service.service_area ? (
           <div className="flex justify-between">
-            <dt className="text-brand-ink/60">Zone d&rsquo;intervention</dt>
+            <dt className="text-brand-ink/70">Zone d&rsquo;intervention</dt>
             <dd className="font-medium text-brand-ink">
               {service.service_area}
             </dd>

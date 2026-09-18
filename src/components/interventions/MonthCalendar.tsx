@@ -35,7 +35,7 @@ export function MonthCalendar({
       <div className="mb-2 flex items-center justify-between">
         <Link
           href={`/planning?vue=planning&affichage=mois&mois=${prevMonth.y}-${String(prevMonth.m + 1).padStart(2, "0")}`}
-          className="p-1 text-brand-ink/60"
+          className="p-1 text-brand-ink/70"
           aria-label="Mois précédent"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -45,14 +45,14 @@ export function MonthCalendar({
         </p>
         <Link
           href={`/planning?vue=planning&affichage=mois&mois=${nextMonth.y}-${String(nextMonth.m + 1).padStart(2, "0")}`}
-          className="p-1 text-brand-ink/60"
+          className="p-1 text-brand-ink/70"
           aria-label="Mois suivant"
         >
           <ChevronRight className="h-5 w-5" />
         </Link>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-brand-ink/40">
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-brand-ink/65">
         {WEEKDAY_LABELS.map((d, i) => (
           <span key={i}>{d}</span>
         ))}

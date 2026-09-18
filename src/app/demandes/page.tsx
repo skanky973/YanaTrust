@@ -20,7 +20,7 @@ export default async function DemandesPage({
       <h1 className="text-2xl font-bold text-brand-green-dark">
         Demandes de services
       </h1>
-      <p className="text-sm text-brand-ink/60">
+      <p className="text-sm text-brand-ink/70">
         Parcourez les demandes des habitants et postulez si vous pouvez les aider.
       </p>
 
@@ -30,7 +30,7 @@ export default async function DemandesPage({
           name="q"
           defaultValue={q}
           placeholder="Rechercher une demande..."
-          className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+          className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
         />
         <select
           name="categorie"
@@ -53,7 +53,7 @@ export default async function DemandesPage({
       </form>
 
       {requests.length === 0 ? (
-        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/60">
+        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/70">
           Aucune demande ouverte pour le moment.
         </p>
       ) : (

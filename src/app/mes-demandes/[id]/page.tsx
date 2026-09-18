@@ -44,7 +44,7 @@ export default async function ModifierDemandePage({
           Candidatures ({applications.length})
         </h2>
         {applications.length === 0 ? (
-          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm text-brand-ink/60">
+          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm text-brand-ink/70">
             Aucune candidature pour le moment.
           </p>
         ) : (

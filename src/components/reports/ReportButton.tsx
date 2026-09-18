@@ -25,7 +25,7 @@ export function ReportButton({
 
   if (state.success) {
     return (
-      <p className={`text-xs text-brand-ink/50 ${className}`}>
+      <p className={`text-xs text-brand-ink/65 ${className}`}>
         Signalement envoyé, merci.
       </p>
     );
@@ -36,7 +36,7 @@ export function ReportButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`text-xs text-brand-ink/40 underline ${className}`}
+        className={`text-xs text-brand-ink/65 underline ${className}`}
       >
         {label}
       </button>
@@ -54,7 +54,7 @@ export function ReportButton({
         minLength={5}
         maxLength={1000}
         placeholder="Motif du signalement..."
-        className="min-h-16 rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-xs text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+        className="min-h-16 rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-xs text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
       />
       {state.fieldErrors?.reason?.[0] ? (
         <p className="text-xs text-red-600">{state.fieldErrors.reason[0]}</p>
@@ -69,7 +69,7 @@ export function ReportButton({
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-xl px-3 py-1.5 text-xs text-brand-ink/50"
+          className="rounded-xl px-3 py-1.5 text-xs text-brand-ink/65"
         >
           Annuler
         </button>

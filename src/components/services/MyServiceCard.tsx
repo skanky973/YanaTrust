@@ -12,7 +12,7 @@ export function MyServiceCard({ service }: { service: Service }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold text-brand-ink">{service.title}</h2>
-          <p className="text-sm text-brand-ink/60">
+          <p className="text-sm text-brand-ink/70">
             {getCategoryLabel(service.category)}
           </p>
         </div>
@@ -20,7 +20,7 @@ export function MyServiceCard({ service }: { service: Service }) {
           className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
             isActive
               ? "bg-brand-green/15 text-brand-green-dark"
-              : "bg-brand-ink/10 text-brand-ink/60"
+              : "bg-brand-ink/10 text-brand-ink/70"
           }`}
         >
           {isActive ? "Actif" : "Archivé"}

@@ -3,7 +3,7 @@ import { getTrustLevel } from "@/lib/trust/score";
 const LEVEL_STYLES: Record<string, string> = {
   eleve: "bg-brand-green/15 text-brand-green-dark",
   moyen: "bg-brand-gold/20 text-brand-green-dark",
-  debutant: "bg-brand-ink/10 text-brand-ink/60",
+  debutant: "bg-brand-ink/10 text-brand-ink/70",
 };
 
 export function TrustScoreBadge({

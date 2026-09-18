@@ -56,7 +56,7 @@ export function ClientPicker({ error }: { error?: string }) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Rechercher par prénom ou nom..."
             autoComplete="off"
-            className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+            className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
           />
           {results.length > 0 ? (
             <div className="flex flex-col overflow-hidden rounded-xl border border-brand-ink/10 bg-white">
@@ -72,7 +72,7 @@ export function ClientPicker({ error }: { error?: string }) {
                 >
                   {client.first_name} {client.last_name}
                   {client.city ? (
-                    <span className="text-brand-ink/50"> · {client.city}</span>
+                    <span className="text-brand-ink/65"> · {client.city}</span>
                   ) : null}
                 </button>
               ))}

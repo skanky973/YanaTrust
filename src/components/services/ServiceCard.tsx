@@ -41,7 +41,7 @@ export function ServiceCard({
             </span>
           ) : null}
         </div>
-        <p className="text-xs text-brand-ink/60">
+        <p className="text-xs text-brand-ink/70">
           {getCategoryLabel(service.category)}
           {service.city ? ` · ${service.city}` : ""}
         </p>
@@ -49,7 +49,7 @@ export function ServiceCard({
           {service.description}
         </p>
         {service.provider ? (
-          <p className="text-xs text-brand-ink/50">
+          <p className="text-xs text-brand-ink/65">
             Par {service.provider.first_name} {service.provider.last_name}
           </p>
         ) : null}

@@ -30,6 +30,6 @@ export function getProposalStatusLabel(value: string): string {
 export function getProposalStatusColor(value: string): string {
   return (
     STATUS_BY_VALUE.get(value as ProposalStatus)?.color ??
-    "bg-brand-ink/10 text-brand-ink/60"
+    "bg-brand-ink/10 text-brand-ink/70"
   );
 }

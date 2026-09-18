@@ -68,12 +68,12 @@ export default async function TrajetDetailPage({
         <p className="text-lg font-semibold text-brand-green-dark">
           {trip.price_per_seat} € / place
         </p>
-        <p className="text-sm text-brand-ink/60">
+        <p className="text-sm text-brand-ink/70">
           {trip.seats_available} place{trip.seats_available > 1 ? "s" : ""} restante
           {trip.seats_available > 1 ? "s" : ""} sur {trip.seats_total}
         </p>
         {trip.driver ? (
-          <p className="text-xs text-brand-ink/50">
+          <p className="text-xs text-brand-ink/65">
             Conducteur : {trip.driver.first_name} {trip.driver.last_name}
           </p>
         ) : null}
@@ -83,16 +83,16 @@ export default async function TrajetDetailPage({
         {trip.status === "cancelled" ? (
           <p className="text-sm font-semibold text-red-600">Ce trajet a été annulé.</p>
         ) : trip.status === "full" ? (
-          <p className="text-sm font-semibold text-brand-ink/60">Ce trajet est complet.</p>
+          <p className="text-sm font-semibold text-brand-ink/70">Ce trajet est complet.</p>
         ) : null}
       </div>
 
       {!user ? (
-        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/60">
+        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/70">
           Connectez-vous pour réserver une place.
         </p>
       ) : isDriver ? (
-        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/60">
+        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/70">
           C&rsquo;est votre trajet.
         </p>
       ) : myBooking ? (
@@ -102,7 +102,7 @@ export default async function TrajetDetailPage({
               ? "Votre réservation est confirmée et payée."
               : "Votre réservation est en attente de paiement."}
           </p>
-          <p className="mt-1 text-sm text-brand-ink/60">
+          <p className="mt-1 text-sm text-brand-ink/70">
             {myBooking.seats_booked} place{myBooking.seats_booked > 1 ? "s" : ""} ·{" "}
             {myBooking.price_total} €
           </p>

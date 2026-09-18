@@ -16,7 +16,7 @@ export function RequestCard({ request }: { request: RequestWithClient }) {
           </span>
         ) : null}
       </div>
-      <p className="text-xs text-brand-ink/60">
+      <p className="text-xs text-brand-ink/70">
         {getCategoryLabel(request.category)}
         {request.city ? ` · ${request.city}` : ""}
       </p>

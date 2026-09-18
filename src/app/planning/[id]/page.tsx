@@ -71,7 +71,7 @@ export default async function InterventionDetailPage({
 
       <dl className="grid gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm">
         <div className="flex justify-between">
-          <dt className="text-brand-ink/60">
+          <dt className="text-brand-ink/70">
             {isProvider ? "Client" : "Prestataire"}
           </dt>
           <dd className="font-medium text-brand-ink">
@@ -80,14 +80,14 @@ export default async function InterventionDetailPage({
         </div>
         {isProvider && intervention.client_phone ? (
           <div className="flex justify-between">
-            <dt className="flex items-center gap-1 text-brand-ink/60">
+            <dt className="flex items-center gap-1 text-brand-ink/70">
               <Phone className="h-3.5 w-3.5" aria-hidden="true" /> Téléphone
             </dt>
             <dd className="font-medium text-brand-ink">{intervention.client_phone}</dd>
           </div>
         ) : null}
         <div className="flex justify-between">
-          <dt className="flex items-center gap-1 text-brand-ink/60">
+          <dt className="flex items-center gap-1 text-brand-ink/70">
             <Clock className="h-3.5 w-3.5" aria-hidden="true" /> Date
           </dt>
           <dd className="font-medium text-brand-ink">
@@ -95,14 +95,14 @@ export default async function InterventionDetailPage({
           </dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-brand-ink/60">Heure de début</dt>
+          <dt className="text-brand-ink/70">Heure de début</dt>
           <dd className="font-medium text-brand-ink">
             {intervention.start_time.slice(0, 5)} ({intervention.duration_minutes} min)
           </dd>
         </div>
         {intervention.address ? (
           <div className="flex justify-between gap-3">
-            <dt className="flex items-center gap-1 text-brand-ink/60">
+            <dt className="flex items-center gap-1 text-brand-ink/70">
               <MapPin className="h-3.5 w-3.5" aria-hidden="true" /> Adresse
             </dt>
             <dd className="text-right font-medium text-brand-ink">
@@ -125,13 +125,13 @@ export default async function InterventionDetailPage({
         ) : null}
         {intervention.price !== null ? (
           <div className="flex justify-between">
-            <dt className="text-brand-ink/60">Prix convenu</dt>
+            <dt className="text-brand-ink/70">Prix convenu</dt>
             <dd className="font-medium text-brand-ink">{intervention.price} €</dd>
           </div>
         ) : null}
         {intervention.final_price !== null ? (
           <div className="flex justify-between">
-            <dt className="text-brand-ink/60">Montant final</dt>
+            <dt className="text-brand-ink/70">Montant final</dt>
             <dd className="font-medium text-brand-ink">{intervention.final_price} €</dd>
           </div>
         ) : null}
@@ -168,7 +168,7 @@ export default async function InterventionDetailPage({
             </p>
           ) : null}
           {intervention.materials_used ? (
-            <p className="mt-2 text-xs text-brand-ink/60">
+            <p className="mt-2 text-xs text-brand-ink/70">
               Matériel : {intervention.materials_used}
             </p>
           ) : null}

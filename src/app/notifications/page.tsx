@@ -34,7 +34,7 @@ export default async function NotificationsPage() {
       <h1 className="text-2xl font-bold text-brand-green-dark">Notifications</h1>
 
       {notifications.length === 0 ? (
-        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/60">
+        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/70">
           Aucune notification pour le moment.
         </p>
       ) : (
@@ -56,7 +56,7 @@ export default async function NotificationsPage() {
                 {n.body ? (
                   <p className="mt-1 text-sm text-brand-ink/70">{n.body}</p>
                 ) : null}
-                <p className="mt-1 text-xs text-brand-ink/40">
+                <p className="mt-1 text-xs text-brand-ink/65">
                   {formatDate(n.created_at)}
                 </p>
               </button>

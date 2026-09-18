@@ -55,13 +55,13 @@ export function TripCard({ trip }: { trip: TripWithDriver }) {
               ? `${trip.driver.first_name} ${trip.driver.last_name}`
               : "Conducteur"}
           </p>
-          <p className="text-xs text-brand-ink/55">
+          <p className="text-xs text-brand-ink/70">
             {formatDate(trip.departure_date)} à {trip.departure_time.slice(0, 5)}
           </p>
         </div>
         <span
           className={`shrink-0 text-xs font-semibold ${
-            complet ? "text-brand-ink/40" : "text-brand-green-dark"
+            complet ? "text-brand-ink/65" : "text-brand-green-dark"
           }`}
         >
           {complet

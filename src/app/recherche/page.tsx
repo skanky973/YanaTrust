@@ -43,7 +43,7 @@ export default async function RecherchePage({
           name="q"
           defaultValue={q}
           placeholder="Rechercher un service..."
-          className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+          className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
         />
         <select
           name="categorie"
@@ -79,7 +79,7 @@ export default async function RecherchePage({
                 name="ville"
                 defaultValue={ville}
                 placeholder="Ex : Saint-Laurent-du-Maroni"
-                className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+                className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
               />
             </div>
 
@@ -143,7 +143,7 @@ export default async function RecherchePage({
       </form>
 
       {services.length === 0 ? (
-        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/60">
+        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/70">
           Aucun service ne correspond à votre recherche pour le moment.
         </p>
       ) : (

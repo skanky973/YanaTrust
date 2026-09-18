@@ -37,7 +37,7 @@ export function ReportRow({ report }: { report: ReportWithContext }) {
     <div className="flex flex-col gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-brand-ink/50">
+          <p className="text-xs font-medium text-brand-ink/65">
             {TARGET_TYPE_LABELS[report.target_type] ?? report.target_type}
           </p>
           {href ? (
@@ -49,7 +49,7 @@ export function ReportRow({ report }: { report: ReportWithContext }) {
           )}
         </div>
         <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[report.status] ?? "bg-brand-ink/10 text-brand-ink/60"}`}
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[report.status] ?? "bg-brand-ink/10 text-brand-ink/70"}`}
         >
           {STATUS_LABELS[report.status] ?? report.status}
         </span>
@@ -57,7 +57,7 @@ export function ReportRow({ report }: { report: ReportWithContext }) {
 
       <p className="text-sm text-brand-ink/70">{report.reason}</p>
 
-      <p className="text-xs text-brand-ink/50">
+      <p className="text-xs text-brand-ink/65">
         Signalé par{" "}
         {report.reporter ? `${report.reporter.first_name} ${report.reporter.last_name}` : "un utilisateur"}
         {" · "}

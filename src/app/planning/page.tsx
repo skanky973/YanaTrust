@@ -145,25 +145,25 @@ export default async function PlanningPage({
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl bg-white shadow-sm shadow-black/5 p-3">
           <p className="text-2xl font-bold text-brand-green-dark">{stats.todayCount}</p>
-          <p className="text-xs text-brand-ink/60">aujourd&rsquo;hui</p>
+          <p className="text-xs text-brand-ink/70">aujourd&rsquo;hui</p>
         </div>
         <div className="rounded-xl bg-white shadow-sm shadow-black/5 p-3">
           <p className="text-2xl font-bold text-brand-green-dark">
             {stats.pendingConfirmationCount}
           </p>
-          <p className="text-xs text-brand-ink/60">en attente de confirmation</p>
+          <p className="text-xs text-brand-ink/70">en attente de confirmation</p>
         </div>
         <div className="rounded-xl bg-white shadow-sm shadow-black/5 p-3">
           <p className="text-2xl font-bold text-brand-green-dark">
             {stats.pendingValidationCount}
           </p>
-          <p className="text-xs text-brand-ink/60">en attente de validation</p>
+          <p className="text-xs text-brand-ink/70">en attente de validation</p>
         </div>
         <div className="rounded-xl bg-white shadow-sm shadow-black/5 p-3">
           <p className="text-2xl font-bold text-brand-green-dark">
             {stats.estimatedRevenueThisMonth.toFixed(0)} €
           </p>
-          <p className="text-xs text-brand-ink/60">estimé ce mois-ci</p>
+          <p className="text-xs text-brand-ink/70">estimé ce mois-ci</p>
         </div>
       </div>
 
@@ -197,7 +197,7 @@ export default async function PlanningPage({
             className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-center text-xs font-semibold ${
               tab === t.value
                 ? "bg-brand-green-dark text-brand-cream"
-                : "text-brand-ink/60"
+                : "text-brand-ink/70"
             }`}
           >
             {t.label}
@@ -217,7 +217,7 @@ export default async function PlanningPage({
               className={`flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-center text-xs font-medium ${
                 view === v.value
                   ? "bg-brand-green/15 text-brand-green-dark"
-                  : "text-brand-ink/50"
+                  : "text-brand-ink/65"
               }`}
             >
               {v.label}
@@ -245,7 +245,7 @@ export default async function PlanningPage({
               name="q"
               defaultValue={q}
               placeholder="Rechercher une intervention..."
-              className="rounded-xl border border-brand-ink/15 bg-white px-4 py-2.5 text-sm text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+              className="rounded-xl border border-brand-ink/15 bg-white px-4 py-2.5 text-sm text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
             />
             <div className="grid grid-cols-2 gap-2">
               <select
@@ -281,7 +281,7 @@ export default async function PlanningPage({
           ) : null}
 
           {filtered.length === 0 ? (
-            <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/60">
+            <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/70">
               Aucune intervention ici pour le moment.
             </p>
           ) : (

@@ -18,5 +18,5 @@ export function getStatusLabel(value: string): string {
 }
 
 export function getStatusColor(value: string): string {
-  return STATUS_BY_VALUE.get(value as RequestStatus)?.color ?? "bg-brand-ink/10 text-brand-ink/60";
+  return STATUS_BY_VALUE.get(value as RequestStatus)?.color ?? "bg-brand-ink/10 text-brand-ink/70";
 }

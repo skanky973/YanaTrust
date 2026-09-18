@@ -37,7 +37,7 @@ export default async function AccueilPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <p className="text-sm text-brand-ink/60">
+          <p className="text-sm text-brand-ink/70">
             Les services d&rsquo;ici, en toute confiance.
           </p>
           <p className="flex items-center gap-1 text-sm font-medium text-brand-ink/70">
@@ -53,9 +53,9 @@ export default async function AccueilPage() {
 
       <Link
         href="/recherche"
-        className="flex items-center gap-3 rounded-xl bg-white shadow-sm shadow-black/5 px-4 py-3 text-sm text-brand-ink/50"
+        className="flex items-center gap-3 rounded-xl bg-white shadow-sm shadow-black/5 px-4 py-3 text-sm text-brand-ink/65"
       >
-        <Search className="h-5 w-5 text-brand-ink/40" aria-hidden="true" />
+        <Search className="h-5 w-5 text-brand-ink/65" aria-hidden="true" />
         Rechercher un service, un pro...
       </Link>
 

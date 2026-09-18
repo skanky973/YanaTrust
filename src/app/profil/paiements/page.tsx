@@ -65,7 +65,7 @@ export default async function PaiementsPage() {
         )}
       </div>
 
-      <p className="text-xs text-brand-ink/50">
+      <p className="text-xs text-brand-ink/65">
         Une commission de 10% est prélevée par YanaTrust sur chaque réservation
         payée ; le reste est reversé directement sur votre compte bancaire par
         Stripe.

@@ -16,7 +16,7 @@ export function MyRequestCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold text-brand-ink">{request.title}</h2>
-          <p className="text-sm text-brand-ink/60">
+          <p className="text-sm text-brand-ink/70">
             {getCategoryLabel(request.category)}
           </p>
         </div>

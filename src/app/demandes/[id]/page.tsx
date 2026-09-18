@@ -49,7 +49,7 @@ export default async function DemandeDetailPage({
             {getStatusLabel(request.status)}
           </span>
         </div>
-        <p className="text-sm text-brand-ink/60">
+        <p className="text-sm text-brand-ink/70">
           {getCategoryLabel(request.category)}
           {request.city ? ` · ${request.city}` : ""}
         </p>
@@ -59,13 +59,13 @@ export default async function DemandeDetailPage({
           </p>
         ) : null}
         {request.desired_date ? (
-          <p className="text-sm text-brand-ink/60">
+          <p className="text-sm text-brand-ink/70">
             Date souhaitée : {new Date(request.desired_date).toLocaleDateString("fr-FR")}
           </p>
         ) : null}
         <p className="text-sm text-brand-ink/80">{request.description}</p>
         {request.client ? (
-          <p className="text-xs text-brand-ink/50">
+          <p className="text-xs text-brand-ink/65">
             Publiée par {request.client.first_name} {request.client.last_name}
           </p>
         ) : null}
@@ -90,7 +90,7 @@ export default async function DemandeDetailPage({
       ) : null}
 
       {isProvider && request.status !== "open" && myApplication ? (
-        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm text-brand-ink/60">
+        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm text-brand-ink/70">
           Cette demande n&rsquo;est plus ouverte aux candidatures.
         </p>
       ) : null}
@@ -101,7 +101,7 @@ export default async function DemandeDetailPage({
             Candidatures ({applications.length})
           </h2>
           {applications.length === 0 ? (
-            <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm text-brand-ink/60">
+            <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm text-brand-ink/70">
               Aucune candidature pour le moment.
             </p>
           ) : (

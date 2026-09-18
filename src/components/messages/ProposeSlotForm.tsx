@@ -160,7 +160,7 @@ export function ProposeSlotForm({
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-xl px-4 py-3 text-sm font-medium text-brand-ink/60"
+          className="rounded-xl px-4 py-3 text-sm font-medium text-brand-ink/70"
         >
           Annuler
         </button>

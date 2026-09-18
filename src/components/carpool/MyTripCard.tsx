@@ -25,16 +25,16 @@ export function MyTripCard({ trip }: { trip: CarpoolTrip }) {
           {formatCity(trip.origin_city)} → {formatCity(trip.destination_city)}
         </Link>
         <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[trip.status] ?? "bg-brand-ink/10 text-brand-ink/60"}`}
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[trip.status] ?? "bg-brand-ink/10 text-brand-ink/70"}`}
         >
           {STATUS_LABELS[trip.status] ?? trip.status}
         </span>
       </div>
-      <p className="text-xs text-brand-ink/60">
+      <p className="text-xs text-brand-ink/70">
         {new Date(`${trip.departure_date}T00:00:00`).toLocaleDateString("fr-FR")} à{" "}
         {trip.departure_time.slice(0, 5)} · {trip.price_per_seat} € / place
       </p>
-      <p className="text-xs text-brand-ink/50">
+      <p className="text-xs text-brand-ink/65">
         {trip.seats_available} / {trip.seats_total} places restantes
       </p>
       {trip.status === "open" || trip.status === "full" ? (

@@ -68,7 +68,7 @@ export default async function MesInterventionsPage({
             className={`relative flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-center text-xs font-semibold ${
               tab === t.value
                 ? "bg-brand-green-dark text-brand-cream"
-                : "text-brand-ink/60"
+                : "text-brand-ink/70"
             }`}
           >
             {t.label}
@@ -82,7 +82,7 @@ export default async function MesInterventionsPage({
       </nav>
 
       {filtered.length === 0 ? (
-        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/60">
+        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/70">
           {tab === "attente"
             ? "Aucune intervention en attente de votre validation."
             : "Aucune intervention ici pour le moment."}

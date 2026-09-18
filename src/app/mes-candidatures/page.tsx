@@ -27,7 +27,7 @@ export default async function MesCandidaturesPage() {
 
       {applications.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-8 text-center">
-          <p className="text-sm text-brand-ink/60">
+          <p className="text-sm text-brand-ink/70">
             Vous n&rsquo;avez encore postulé à aucune demande.
           </p>
           <Link

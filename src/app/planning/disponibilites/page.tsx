@@ -50,7 +50,7 @@ export default async function DisponibilitesPage() {
         </h2>
 
         {slots.length === 0 ? (
-          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/60">
+          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/70">
             Aucun horaire défini pour le moment.
           </p>
         ) : (
@@ -81,7 +81,7 @@ export default async function DisponibilitesPage() {
         </h2>
 
         {unavailableDates.length === 0 ? (
-          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/60">
+          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/70">
             Aucun jour bloqué à venir.
           </p>
         ) : (

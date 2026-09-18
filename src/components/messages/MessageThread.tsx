@@ -66,7 +66,7 @@ export function MessageThread({
     <div className="flex flex-1 flex-col">
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
         {messages.length === 0 ? (
-          <p className="mt-8 text-center text-sm text-brand-ink/50">
+          <p className="mt-8 text-center text-sm text-brand-ink/65">
             Aucun message pour le moment. Dites bonjour !
           </p>
         ) : (
@@ -78,7 +78,7 @@ export function MessageThread({
               return (
                 <p
                   key={message.id}
-                  className="self-center rounded-full bg-brand-ink/5 px-4 py-1.5 text-center text-xs text-brand-ink/60"
+                  className="self-center rounded-full bg-brand-ink/5 px-4 py-1.5 text-center text-xs text-brand-ink/70"
                 >
                   {message.content}
                 </p>
@@ -98,7 +98,7 @@ export function MessageThread({
                 <p className="whitespace-pre-line text-sm">{message.content}</p>
                 <p
                   className={`mt-1 text-[10px] ${
-                    isOwn ? "text-brand-cream/70" : "text-brand-ink/40"
+                    isOwn ? "text-brand-cream/70" : "text-brand-ink/65"
                   }`}
                 >
                   {formatTime(message.created_at)}
@@ -129,7 +129,7 @@ export function MessageThread({
           maxLength={4000}
           placeholder="Votre message..."
           autoComplete="off"
-          className="flex-1 rounded-full border border-brand-ink/15 bg-white px-4 py-2 text-sm text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+          className="flex-1 rounded-full border border-brand-ink/15 bg-white px-4 py-2 text-sm text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
         />
         <button
           type="submit"

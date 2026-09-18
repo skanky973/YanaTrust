@@ -48,7 +48,7 @@ export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
               <Link
                 href={href}
                 className={`flex flex-col items-center gap-1 py-2.5 text-xs font-medium ${
-                  isActive ? "text-brand-green-dark" : "text-brand-ink/50"
+                  isActive ? "text-brand-green-dark" : "text-brand-ink/65"
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >

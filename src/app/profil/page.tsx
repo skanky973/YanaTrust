@@ -134,22 +134,22 @@ export default async function ProfilPage() {
 
       <dl className="grid grid-cols-1 gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm">
         <div className="flex justify-between">
-          <dt className="text-brand-ink/60">Téléphone</dt>
+          <dt className="text-brand-ink/70">Téléphone</dt>
           <dd className="font-medium text-brand-ink">
             {profile.phone || "—"}{" "}
             {profile.phone && !profile.phone_verified ? (
-              <span className="text-brand-ink/40">(non vérifié)</span>
+              <span className="text-brand-ink/65">(non vérifié)</span>
             ) : null}
           </dd>
         </div>
         {user?.email ? (
           <div className="flex justify-between">
-            <dt className="text-brand-ink/60">E-mail</dt>
+            <dt className="text-brand-ink/70">E-mail</dt>
             <dd className="font-medium text-brand-ink">{user.email}</dd>
           </div>
         ) : null}
         <div className="flex justify-between">
-          <dt className="text-brand-ink/60">Zone d&rsquo;intervention</dt>
+          <dt className="text-brand-ink/70">Zone d&rsquo;intervention</dt>
           <dd className="font-medium text-brand-ink">
             {profile.service_area || "—"}
           </dd>
@@ -165,7 +165,7 @@ export default async function ProfilPage() {
             {awaitingValidation.length} intervention
             {awaitingValidation.length > 1 ? "s" : ""} en attente de votre validation
           </p>
-          <p className="text-xs text-brand-ink/60">Voir dans Mes interventions →</p>
+          <p className="text-xs text-brand-ink/70">Voir dans Mes interventions →</p>
         </Link>
       ) : null}
 
@@ -192,7 +192,7 @@ export default async function ProfilPage() {
 
       <SignOutButton />
 
-      <p className="text-center text-xs text-brand-ink/50">
+      <p className="text-center text-xs text-brand-ink/65">
         Membre depuis le{" "}
         {new Date(profile.created_at).toLocaleDateString("fr-FR")}
       </p>

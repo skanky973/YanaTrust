@@ -33,14 +33,14 @@ export default async function CovoiturageParcourirPage({
             name="depart"
             defaultValue={depart}
             placeholder="Ville de départ"
-            className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+            className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
           />
           <input
             type="search"
             name="arrivee"
             defaultValue={arrivee}
             placeholder="Ville d'arrivée"
-            className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+            className="rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30"
           />
         </div>
         <button
@@ -63,7 +63,7 @@ export default async function CovoiturageParcourirPage({
               ? "Aucun trajet sur cet itinéraire"
               : "Aucun trajet proposé pour le moment"}
           </p>
-          <p className="max-w-xs text-sm text-brand-ink/60">
+          <p className="max-w-xs text-sm text-brand-ink/70">
             {depart || arrivee
               ? "Essayez une autre ville, ou proposez vous-même ce trajet."
               : "Soyez le premier à proposer des places dans votre voiture."}

@@ -31,7 +31,7 @@ export function RecommendedProviderCard({
             />
           ) : null}
         </div>
-        <p className="text-xs text-brand-ink/60">
+        <p className="text-xs text-brand-ink/70">
           {formatCity(provider.city) || "Ville non renseignée"}
         </p>
       </div>
@@ -41,7 +41,7 @@ export function RecommendedProviderCard({
             ★ {provider.averageRating.toFixed(1)}
           </p>
         ) : null}
-        <p className="text-xs text-brand-ink/50">
+        <p className="text-xs text-brand-ink/65">
           TrustScore {provider.trustScore}
         </p>
       </div>

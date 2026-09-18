@@ -32,7 +32,7 @@ export function InterventionCard({
           <h3 className="truncate font-semibold text-brand-ink">
             {intervention.title}
           </h3>
-          <p className="text-xs text-brand-ink/60">
+          <p className="text-xs text-brand-ink/70">
             {getCategoryLabel(intervention.category)}
             {otherParty ? ` · ${otherParty.first_name} ${otherParty.last_name}` : ""}
           </p>
@@ -40,7 +40,7 @@ export function InterventionCard({
         <StatusBadge status={intervention.status} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-ink/60">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-ink/70">
         <span className="flex items-center gap-1">
           <Clock className="h-3.5 w-3.5" aria-hidden="true" />
           {formatDate(intervention.scheduled_date)} · {intervention.start_time.slice(0, 5)}

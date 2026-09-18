@@ -32,7 +32,7 @@ export default async function FavorisPage() {
           Prestataires
         </h2>
         {providers.length === 0 ? (
-          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/50">
+          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/65">
             Aucun prestataire en favori.
           </p>
         ) : (
@@ -46,7 +46,7 @@ export default async function FavorisPage() {
                 <p className="font-semibold text-brand-ink">
                   {provider.first_name} {provider.last_name}
                 </p>
-                <p className="text-sm text-brand-ink/60">
+                <p className="text-sm text-brand-ink/70">
                   {provider.city || "—"}
                 </p>
               </Link>
@@ -58,7 +58,7 @@ export default async function FavorisPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-brand-ink/70">Services</h2>
         {services.length === 0 ? (
-          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/50">
+          <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/65">
             Aucun service en favori.
           </p>
         ) : (
@@ -72,7 +72,7 @@ export default async function FavorisPage() {
                 <p className="font-semibold text-brand-ink">
                   {service.title}
                 </p>
-                <p className="text-sm text-brand-ink/60">
+                <p className="text-sm text-brand-ink/70">
                   {getCategoryLabel(service.category)}
                 </p>
               </Link>

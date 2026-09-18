@@ -19,7 +19,7 @@ export function TextField({
       <input
         id={name}
         name={name}
-        className={`rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30 ${
+        className={`rounded-xl border border-brand-ink/15 bg-white px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink/65 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/30 ${
           error ? "border-red-400" : ""
         } ${className}`}
         aria-invalid={error ? "true" : undefined}

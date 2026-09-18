@@ -32,7 +32,7 @@ export default async function MessagesPage() {
       <h1 className="text-2xl font-bold text-brand-green-dark">Messages</h1>
 
       {conversations.length === 0 ? (
-        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/60">
+        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/70">
           Aucune conversation pour le moment. Contactez un prestataire depuis
           la page d&rsquo;un service pour démarrer une discussion.
         </p>
@@ -50,12 +50,12 @@ export default async function MessagesPage() {
                     ? `${conversation.otherParticipant.first_name} ${conversation.otherParticipant.last_name}`
                     : "Utilisateur"}
                 </p>
-                <p className="truncate text-sm text-brand-ink/60">
+                <p className="truncate text-sm text-brand-ink/70">
                   {conversation.lastMessage?.content ?? "Nouvelle conversation"}
                 </p>
               </div>
               {conversation.lastMessage ? (
-                <span className="shrink-0 text-xs text-brand-ink/40">
+                <span className="shrink-0 text-xs text-brand-ink/65">
                   {formatDate(conversation.lastMessage.created_at)}
                 </span>
               ) : null}

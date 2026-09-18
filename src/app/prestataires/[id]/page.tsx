@@ -95,7 +95,7 @@ export default async function PrestatairePage({
       {profile.service_area ? (
         <dl className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm">
           <div className="flex justify-between">
-            <dt className="text-brand-ink/60">Zone d&rsquo;intervention</dt>
+            <dt className="text-brand-ink/70">Zone d&rsquo;intervention</dt>
             <dd className="font-medium text-brand-ink">
               {profile.service_area}
             </dd>
