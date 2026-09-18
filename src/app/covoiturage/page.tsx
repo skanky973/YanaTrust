@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Car } from "lucide-react";
 import { getOpenTrips } from "@/lib/carpool/queries";
 import { TripCard } from "@/components/carpool/TripCard";
 import { LinkButton } from "@/components/ui/Button";
@@ -51,9 +52,26 @@ export default async function CovoiturageParcourirPage({
       </form>
 
       {trips.length === 0 ? (
-        <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-6 text-center text-sm text-brand-ink/60">
-          Aucun trajet disponible pour le moment.
-        </p>
+        /* Un écran vide ne doit pas ressembler à une page cassée : on dit
+           pourquoi il n'y a rien, et on propose la seule action utile. */
+        <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-6 py-10 text-center shadow-sm shadow-black/5">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-green/10">
+            <Car className="h-7 w-7 text-brand-green-dark" aria-hidden="true" />
+          </span>
+          <p className="font-semibold text-brand-ink">
+            {depart || arrivee
+              ? "Aucun trajet sur cet itinéraire"
+              : "Aucun trajet proposé pour le moment"}
+          </p>
+          <p className="max-w-xs text-sm text-brand-ink/60">
+            {depart || arrivee
+              ? "Essayez une autre ville, ou proposez vous-même ce trajet."
+              : "Soyez le premier à proposer des places dans votre voiture."}
+          </p>
+          <LinkButton href="/covoiturage/nouveau" variant="primary" className="mt-1">
+            Proposer un trajet
+          </LinkButton>
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
           {trips.map((trip) => (

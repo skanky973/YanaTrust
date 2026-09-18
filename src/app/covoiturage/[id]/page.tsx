@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { formatCity } from "@/lib/format/city";
 import { getTripById, getMyBookingForTrip } from "@/lib/carpool/queries";
 import { BookingForm } from "@/components/carpool/BookingForm";
 import { Alert } from "@/components/ui/Alert";
@@ -14,7 +15,7 @@ export async function generateMetadata({
   const trip = await getTripById(id);
   return {
     title: trip
-      ? `${trip.origin_city} → ${trip.destination_city} — YanaTrust`
+      ? `${formatCity(trip.origin_city)} → ${formatCity(trip.destination_city)} — YanaTrust`
       : "Trajet — YanaTrust",
   };
 }
@@ -54,7 +55,7 @@ export default async function TrajetDetailPage({
 
       <div className="flex flex-col gap-2 rounded-xl bg-white shadow-sm shadow-black/5 p-4">
         <h1 className="text-xl font-bold text-brand-ink">
-          {trip.origin_city} → {trip.destination_city}
+          {formatCity(trip.origin_city)} → {formatCity(trip.destination_city)}
         </h1>
         <p className="text-sm text-brand-ink/70">
           {new Date(`${trip.departure_date}T00:00:00`).toLocaleDateString("fr-FR", {

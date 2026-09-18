@@ -18,42 +18,38 @@ export default async function AccueilPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <YanaTrustMark className="h-9 w-9" />
-          <YanaTrustWordmark className="text-lg" />
+      {/* Marque, promesse et lieu forment un seul bloc. Ils étaient auparavant
+          trois éléments séparés par l'espacement général de la page, rattrapé
+          par une marge négative : l'ensemble se lisait comme trois annonces
+          sans rapport plutôt que comme une identité. */}
+      <header className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <YanaTrustMark className="h-9 w-9" />
+            <YanaTrustWordmark className="text-lg" />
+          </div>
+          <Link
+            href={user ? "/profil" : "/connexion"}
+            className="text-sm font-semibold text-brand-green-dark"
+          >
+            {user ? "Mon profil" : "Se connecter"}
+          </Link>
         </div>
-        {user ? (
-          <Link
-            href="/profil"
-            className="text-sm font-semibold text-brand-green-dark"
-          >
-            Mon profil
-          </Link>
-        ) : (
-          <Link
-            href="/connexion"
-            className="text-sm font-semibold text-brand-green-dark"
-          >
-            Se connecter
-          </Link>
-        )}
-      </div>
 
-      <p className="-mt-4 text-sm text-brand-ink/60">
-        Les services d&rsquo;ici, en toute confiance.
-      </p>
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-brand-ink/60">
+            Les services d&rsquo;ici, en toute confiance.
+          </p>
+          <p className="flex items-center gap-1 text-sm font-medium text-brand-ink/70">
+            <MapPin className="h-4 w-4 text-brand-green" aria-hidden="true" />
+            Saint-Laurent-du-Maroni, Guyane
+          </p>
+        </div>
+      </header>
 
-      <p className="flex items-center gap-1 text-sm text-brand-ink/60">
-        <MapPin className="h-4 w-4 text-brand-green" aria-hidden="true" />
-        Saint-Laurent-du-Maroni, Guyane
-      </p>
-
-      <div>
-        <h1 className="text-xl font-bold text-brand-ink">
-          De quoi avez-vous besoin ?
-        </h1>
-      </div>
+      <h1 className="-mb-2 text-xl font-bold text-brand-ink">
+        De quoi avez-vous besoin ?
+      </h1>
 
       <Link
         href="/recherche"

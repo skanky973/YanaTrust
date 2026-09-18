@@ -4,7 +4,11 @@ import { CATEGORY_ICONS, CATEGORY_TILE_STYLES } from "@/lib/services/category-ic
 
 export function CategoryGrid() {
   return (
-    <div className="grid grid-cols-4 gap-3">
+    /* Trois colonnes plutôt que quatre : à 390 px de large, quatre tuiles
+       laissaient trop peu de place aux libellés, qui passaient sur deux
+       lignes ("Beauté & bien-être", "Cours particuliers"). Les neuf
+       catégories remplissent exactement trois lignes, sans orphelin. */
+    <div className="grid grid-cols-3 gap-x-3 gap-y-4">
       {SERVICE_CATEGORIES.filter((c) => c.value !== "autre").map(
         ({ value, label }, i) => {
           const Icon = CATEGORY_ICONS[value];
@@ -14,14 +18,14 @@ export function CategoryGrid() {
             <Link
               key={value}
               href={`/recherche?categorie=${value}`}
-              className="flex flex-col items-center gap-1.5"
+              className="flex flex-col items-center gap-2"
             >
               <span
-                className={`flex h-14 w-14 items-center justify-center rounded-2xl ${tileStyle}`}
+                className={`flex h-16 w-16 items-center justify-center rounded-2xl ${tileStyle}`}
               >
-                <Icon className="h-6 w-6" aria-hidden="true" />
+                <Icon className="h-7 w-7" aria-hidden="true" />
               </span>
-              <span className="text-center text-[11px] font-medium leading-tight text-brand-ink/80">
+              <span className="text-center text-xs font-medium leading-tight text-brand-ink/80">
                 {label}
               </span>
             </Link>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { formatCity } from "@/lib/format/city";
 import { getMyBookings } from "@/lib/carpool/queries";
 import { cancelMyBooking, cancelMyPaidBooking } from "@/lib/actions/carpool";
 
@@ -61,7 +62,7 @@ export default async function MesReservationsPage() {
                   className="font-semibold text-brand-ink hover:underline"
                 >
                   {booking.trip
-                    ? `${booking.trip.origin_city} → ${booking.trip.destination_city}`
+                    ? `${formatCity(booking.trip.origin_city)} → ${formatCity(booking.trip.destination_city)}`
                     : "Trajet introuvable"}
                 </Link>
                 <span

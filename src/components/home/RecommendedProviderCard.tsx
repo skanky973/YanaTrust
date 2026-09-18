@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { BadgeCheck } from "lucide-react";
+import { formatCity } from "@/lib/format/city";
+import { Avatar } from "@/components/ui/Avatar";
 import type { RecommendedProvider } from "@/lib/profiles/recommended";
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "?";
-}
 
 export function RecommendedProviderCard({
   provider,
@@ -16,9 +14,11 @@ export function RecommendedProviderCard({
       href={`/prestataires/${provider.id}`}
       className="flex items-center gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-4"
     >
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-green-dark text-sm font-bold text-brand-cream">
-        {initials(provider.first_name, provider.last_name)}
-      </div>
+      <Avatar
+        firstName={provider.first_name}
+        lastName={provider.last_name}
+        size="md"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <p className="truncate font-semibold text-brand-ink">
@@ -32,7 +32,7 @@ export function RecommendedProviderCard({
           ) : null}
         </div>
         <p className="text-xs text-brand-ink/60">
-          {provider.city || "Ville non renseignée"}
+          {formatCity(provider.city) || "Ville non renseignée"}
         </p>
       </div>
       <div className="shrink-0 text-right">

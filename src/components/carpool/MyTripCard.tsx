@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatCity } from "@/lib/format/city";
 import { cancelTrip } from "@/lib/actions/carpool";
 import type { CarpoolTrip } from "@/lib/supabase/database.types";
 
@@ -21,7 +22,7 @@ export function MyTripCard({ trip }: { trip: CarpoolTrip }) {
     <div className="flex flex-col gap-2 rounded-xl bg-white shadow-sm shadow-black/5 p-4">
       <div className="flex items-start justify-between gap-3">
         <Link href={`/covoiturage/${trip.id}`} className="font-semibold text-brand-ink hover:underline">
-          {trip.origin_city} → {trip.destination_city}
+          {formatCity(trip.origin_city)} → {formatCity(trip.destination_city)}
         </Link>
         <span
           className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[trip.status] ?? "bg-brand-ink/10 text-brand-ink/60"}`}
