@@ -361,6 +361,14 @@ create table if not exists public.messages (
 create index if not exists messages_conversation_id_created_at_idx
   on public.messages (conversation_id, created_at);
 
+-- Messages système : posés par le serveur (service_role) pour annoncer un fait
+-- vérifié, comme la confirmation d'une réservation de covoiturage. Ils n'ont
+-- pas d'auteur, d'où sender_id rendu nullable — c'est aussi ce qui les rend
+-- infalsifiables : la policy d'insertion exige sender_id = auth.uid(), donc un
+-- utilisateur ne peut jamais en créer un (NULL = auth.uid() n'est jamais vrai).
+alter table public.messages add column if not exists is_system boolean not null default false;
+alter table public.messages alter column sender_id drop not null;
+
 -- ----------------------------------------------------------------------------
 -- Trigger: fait remonter la conversation en tête de liste à chaque message
 -- ----------------------------------------------------------------------------
@@ -1927,6 +1935,26 @@ as $$
   );
 $$;
 
+-- Les RLS de stripe_accounts réservent chaque ligne à son propriétaire, ce qui
+-- est voulu : personne ne doit pouvoir parcourir les comptes de paiement des
+-- autres. Mais le passager qui réserve a besoin du compte du conducteur pour
+-- que Stripe lui reverse l'argent (destination charge). Cette fonction expose
+-- ce strict minimum, et uniquement pour le trajet demandé.
+create or replace function public.get_trip_payout_account(p_trip_id uuid)
+returns table (stripe_account_id text, payouts_enabled boolean)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select sa.stripe_account_id, sa.payouts_enabled
+  from public.carpool_trips t
+  join public.stripe_accounts sa on sa.id = t.driver_id
+  where t.id = p_trip_id;
+$$;
+
+comment on function public.get_trip_payout_account is 'Compte de paiement du conducteur d''un trajet, pour créer le paiement Stripe côté serveur. Contourne volontairement les RLS de stripe_accounts, en se limitant au trajet passé en argument.';
+
 alter table public.carpool_trips enable row level security;
 
 drop policy if exists "Trips are viewable by everyone" on public.carpool_trips;
@@ -1938,13 +1966,14 @@ create policy "Trips are viewable by everyone"
     or public.is_trip_passenger(id)
   );
 
+-- Publier un trajet est ouvert à tout compte connecté, prestataire ou non :
+-- proposer des places dans sa voiture n'est pas une prestation de service.
+-- L'ancienne policy réservée aux prestataires est explicitement supprimée.
 drop policy if exists "Providers can publish trips" on public.carpool_trips;
-create policy "Providers can publish trips"
+drop policy if exists "Any authenticated user can publish trips" on public.carpool_trips;
+create policy "Any authenticated user can publish trips"
   on public.carpool_trips for insert
-  with check (
-    driver_id = auth.uid()
-    and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_provider = true)
-  );
+  with check (driver_id = auth.uid());
 
 drop policy if exists "Drivers can update own trips" on public.carpool_trips;
 create policy "Drivers can update own trips"

@@ -19,16 +19,8 @@ export async function startStripeOnboarding() {
     redirect("/connexion?suivant=/profil/paiements");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_provider")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.is_provider) {
-    redirect("/profil");
-  }
-
+  // Ouvert à tout compte connecté : un particulier qui publie un trajet de
+  // covoiturage doit pouvoir activer ses paiements sans être prestataire.
   const { data: existing } = await supabase
     .from("stripe_accounts")
     .select("stripe_account_id")

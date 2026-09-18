@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, Plus, MessageCircle, User } from "lucide-react";
+import { Home, Search, Plus, Car, MessageCircle, User } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "Accueil", icon: Home },
   { href: "/recherche", label: "Recherche", icon: Search },
   { href: "/publier", label: "Publier", icon: Plus, isCenter: true },
+  { href: "/covoiturage", label: "Trajets", icon: Car },
   { href: "/messages", label: "Messages", icon: MessageCircle },
   { href: "/profil", label: "Profil", icon: User },
 ];

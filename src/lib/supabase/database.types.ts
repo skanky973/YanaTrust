@@ -171,22 +171,25 @@ export type Database = {
         Row: {
           id: string;
           conversation_id: string;
-          sender_id: string;
+          sender_id: string | null;
           content: string;
+          is_system: boolean;
           created_at: string;
         };
         Insert: {
           id?: string;
           conversation_id: string;
-          sender_id: string;
+          sender_id?: string | null;
           content: string;
+          is_system?: boolean;
           created_at?: string;
         };
         Update: {
           id?: string;
           conversation_id?: string;
-          sender_id?: string;
+          sender_id?: string | null;
           content?: string;
+          is_system?: boolean;
           created_at?: string;
         };
         Relationships: [];
@@ -790,6 +793,10 @@ export type Database = {
       cancel_carpool_booking: {
         Args: { p_booking_id: string };
         Returns: undefined;
+      };
+      get_trip_payout_account: {
+        Args: { p_trip_id: string };
+        Returns: { stripe_account_id: string; payouts_enabled: boolean }[];
       };
     };
     Enums: Record<string, never>;

@@ -19,16 +19,8 @@ export default async function PaiementsPage() {
     redirect("/connexion?suivant=/profil/paiements");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_provider")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.is_provider) {
-    redirect("/profil");
-  }
-
+  // Accessible à tout compte connecté : les paiements servent aussi bien aux
+  // prestations qu'au covoiturage, que le compte soit prestataire ou non.
   const account = await getMyStripeAccount();
 
   return (

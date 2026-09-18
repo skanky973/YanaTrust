@@ -20,16 +20,9 @@ export default async function NouveauTrajetPage() {
     redirect("/connexion?suivant=/covoiturage/nouveau");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_provider")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.is_provider) {
-    redirect("/covoiturage");
-  }
-
+  // Publier un trajet est ouvert à tout compte connecté, prestataire ou non :
+  // conduire n'est pas une prestation de service, c'est du partage de frais.
+  // Seule l'activation des paiements reste requise, pour pouvoir être payé.
   const account = await getMyStripeAccount();
 
   if (!account?.payouts_enabled) {

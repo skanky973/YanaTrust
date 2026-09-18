@@ -71,6 +71,20 @@ export function MessageThread({
           </p>
         ) : (
           messages.map((message) => {
+            // Message système : ni à gauche ni à droite, il n'appartient à
+            // personne. Présenté comme un repère dans le fil, pas comme une
+            // parole de l'un des deux participants.
+            if (message.is_system) {
+              return (
+                <p
+                  key={message.id}
+                  className="self-center rounded-full bg-brand-ink/5 px-4 py-1.5 text-center text-xs text-brand-ink/60"
+                >
+                  {message.content}
+                </p>
+              );
+            }
+
             const isOwn = message.sender_id === currentUserId;
             return (
               <div

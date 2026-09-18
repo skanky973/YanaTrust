@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/client";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { getOrCreateConversation } from "@/lib/conversations/get-or-create";
 
 // Reçoit les événements Stripe (paiement confirmé, session expirée, compte
 // conducteur mis à jour). La signature garantit que la requête vient bien de
@@ -40,17 +41,50 @@ export async function POST(request: Request) {
         .update({ status: "paid", stripe_payment_intent_id: paymentIntentId })
         .eq("id", bookingId)
         .eq("status", "pending_payment")
-        .select("trip_id, passenger_id")
+        .select("trip_id, passenger_id, seats_booked")
         .single();
 
       if (booking) {
         const { data: trip } = await supabase
           .from("carpool_trips")
-          .select("driver_id, origin_city, destination_city, departure_date")
+          .select(
+            "driver_id, origin_city, destination_city, departure_date, departure_time",
+          )
           .eq("id", booking.trip_id)
           .single();
 
         if (trip) {
+          // Une fois la place payée, passager et conducteur doivent pouvoir se
+          // joindre (point de rendez-vous, retard, bagages). On ouvre donc la
+          // conversation sans attendre que l'un des deux en prenne l'initiative.
+          // Si elle existe déjà, elle est simplement réutilisée.
+          const conversationId = await getOrCreateConversation(
+            supabase,
+            booking.passenger_id,
+            trip.driver_id,
+          );
+
+          if (conversationId) {
+            const jour = new Date(
+              `${trip.departure_date}T00:00:00`,
+            ).toLocaleDateString("fr-FR", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            });
+            const places = `${booking.seats_booked} place${booking.seats_booked > 1 ? "s" : ""}`;
+
+            await supabase.from("messages").insert({
+              conversation_id: conversationId,
+              sender_id: null,
+              is_system: true,
+              content:
+                `Réservation confirmée : ${trip.origin_city} → ${trip.destination_city}, ` +
+                `${places} le ${jour} à ${trip.departure_time.slice(0, 5)}. ` +
+                `Convenez ici de votre point de rendez-vous.`,
+            });
+          }
+
           const notifBody = `${trip.origin_city} → ${trip.destination_city} le ${trip.departure_date}`;
           await supabase.from("notifications").insert([
             {

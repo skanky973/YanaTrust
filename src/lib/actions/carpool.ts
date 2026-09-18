@@ -43,16 +43,8 @@ export async function publishTrip(
 
   const { supabase, userId } = await requireCurrentUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_provider")
-    .eq("id", userId)
-    .single();
-
-  if (!profile?.is_provider) {
-    return { error: "Seul un compte prestataire peut publier un trajet." };
-  }
-
+  // Aucune condition de statut prestataire : n'importe quel compte peut
+  // proposer un trajet. Seule l'activation des paiements est nécessaire.
   const { data: stripeAccount } = await supabase
     .from("stripe_accounts")
     .select("payouts_enabled")
@@ -157,11 +149,15 @@ export async function createBookingCheckout(
     return { error: "Trajet introuvable." };
   }
 
-  const { data: driverStripe } = await supabase
-    .from("stripe_accounts")
-    .select("stripe_account_id, payouts_enabled")
-    .eq("id", trip.driver_id)
-    .maybeSingle();
+  // La RLS de stripe_accounts ne laisse chacun lire que sa propre ligne : un
+  // passager ne peut donc pas interroger la table pour le conducteur. On passe
+  // par une fonction security definer, limitée au compte de paiement du
+  // conducteur de ce trajet précis.
+  const { data: payoutAccounts } = await supabase.rpc("get_trip_payout_account", {
+    p_trip_id: tripId,
+  });
+
+  const driverStripe = payoutAccounts?.[0];
 
   if (!driverStripe?.payouts_enabled) {
     return { error: "Ce conducteur n'a pas encore activé les paiements." };
