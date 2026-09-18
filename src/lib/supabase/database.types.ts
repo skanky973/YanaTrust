@@ -794,6 +794,10 @@ export type Database = {
         Args: { p_booking_id: string };
         Returns: undefined;
       };
+      refund_carpool_booking: {
+        Args: { p_booking_id: string };
+        Returns: undefined;
+      };
       get_trip_payout_account: {
         Args: { p_trip_id: string };
         Returns: { stripe_account_id: string; payouts_enabled: boolean }[];

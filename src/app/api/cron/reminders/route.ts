@@ -55,5 +55,25 @@ export async function GET(request: Request) {
       .eq("id", intervention.id);
   }
 
-  return NextResponse.json({ remindersSent: interventions?.length ?? 0 });
+  // Clôture des trajets de covoiturage dont la date de départ est passée.
+  // La recherche les masque déjà (getOpenTrips filtre sur la date), mais sans
+  // ça leur statut reste "ouvert" indéfiniment côté conducteur, et le libellé
+  // "Terminé" de MyTripCard n'est jamais atteint.
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: pastTrips, error: tripsError } = await supabase
+    .from("carpool_trips")
+    .update({ status: "completed" })
+    .lt("departure_date", today)
+    .in("status", ["open", "full"])
+    .select("id");
+
+  if (tripsError) {
+    console.error("cron/trajets termines:", tripsError.message);
+  }
+
+  return NextResponse.json({
+    remindersSent: interventions?.length ?? 0,
+    tripsCompleted: pastTrips?.length ?? 0,
+  });
 }

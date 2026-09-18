@@ -3,12 +3,54 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe/client";
 import { getSiteUrl } from "@/lib/site-url";
 import { tripFormSchema } from "@/lib/validation/carpool";
 import { createNotification } from "@/lib/notifications/create";
 import type { ActionState } from "@/lib/actions/action-state";
+
+// Rembourse effectivement l'argent chez Stripe, puis seulement en cas de
+// succès marque la réservation comme remboursée. L'ordre compte : une
+// réservation affichée "Remboursée" alors que l'argent n'est pas reparti
+// serait un mensonge fait au passager.
+// reverse_transfer et refund_application_fee sont indispensables ici : le
+// paiement est un "destination charge", l'argent est déjà chez le conducteur
+// et la commission chez nous — il faut reprendre les deux pour rembourser.
+async function refundPaidBooking(
+  supabase: SupabaseClient<Database>,
+  booking: { id: string; stripe_payment_intent_id: string | null },
+): Promise<boolean> {
+  if (!booking.stripe_payment_intent_id) {
+    console.error("refundPaidBooking: aucun paiement Stripe", booking.id);
+    return false;
+  }
+
+  try {
+    await getStripe().refunds.create({
+      payment_intent: booking.stripe_payment_intent_id,
+      refund_application_fee: true,
+      reverse_transfer: true,
+    });
+  } catch (err) {
+    console.error("refundPaidBooking:", booking.id, (err as Error).message);
+    return false;
+  }
+
+  const { error } = await supabase.rpc("refund_carpool_booking", {
+    p_booking_id: booking.id,
+  });
+
+  if (error) {
+    // L'argent est bien reparti mais la base n'a pas suivi : à corriger à la
+    // main, d'où un log explicite plutôt qu'un échec silencieux.
+    console.error("refundPaidBooking (base):", booking.id, error.message);
+  }
+
+  return true;
+}
 
 async function requireCurrentUser() {
   const supabase = await createClient();
@@ -101,7 +143,7 @@ export async function cancelTrip(tripId: string) {
 
   const { data: bookings } = await supabase
     .from("carpool_bookings")
-    .select("passenger_id, status")
+    .select("id, passenger_id, status, stripe_payment_intent_id")
     .eq("trip_id", tripId)
     .in("status", ["pending_payment", "paid"]);
 
@@ -111,15 +153,25 @@ export async function cancelTrip(tripId: string) {
     .eq("id", tripId)
     .eq("driver_id", userId);
 
+  const trajet = `${trip.origin_city} → ${trip.destination_city}`;
+
   for (const booking of bookings ?? []) {
+    let body = trajet;
+
+    if (booking.status === "paid") {
+      const refunded = await refundPaidBooking(supabase, booking);
+      body = refunded
+        ? `${trajet} — vous êtes intégralement remboursé, sous 5 à 10 jours selon votre banque.`
+        : `${trajet} — le remboursement automatique a échoué, contactez-nous pour être remboursé.`;
+    } else {
+      await supabase.rpc("cancel_carpool_booking", { p_booking_id: booking.id });
+    }
+
     await createNotification(supabase, {
       userId: booking.passenger_id,
       type: "carpool_trip_cancelled",
       title: "Trajet annulé par le conducteur",
-      body:
-        booking.status === "paid"
-          ? `${trip.origin_city} → ${trip.destination_city} — vous serez remboursé, contactez le support si besoin.`
-          : `${trip.origin_city} → ${trip.destination_city}`,
+      body,
     });
   }
 
@@ -147,6 +199,13 @@ export async function createBookingCheckout(
 
   if (!trip) {
     return { error: "Trajet introuvable." };
+  }
+
+  // La recherche masque les trajets passés, mais un lien direct vers la page
+  // du trajet, lui, reste accessible : on refuse donc ici aussi, côté serveur.
+  const departure = new Date(`${trip.departure_date}T${trip.departure_time}`);
+  if (Number.isFinite(departure.getTime()) && departure.getTime() <= Date.now()) {
+    return { error: "Ce trajet est déjà parti." };
   }
 
   // La RLS de stripe_accounts ne laisse chacun lire que sa propre ligne : un
@@ -234,4 +293,49 @@ export async function cancelMyBooking(bookingId: string) {
   const { supabase } = await requireCurrentUser();
   await supabase.rpc("cancel_carpool_booking", { p_booking_id: bookingId });
   revalidatePath("/mes-reservations");
+}
+
+// Désistement d'un passager ayant déjà payé : remboursement intégral tant que
+// le trajet n'est pas parti, et les places repartent immédiatement à la vente.
+export async function cancelMyPaidBooking(bookingId: string): Promise<void> {
+  const { supabase, userId } = await requireCurrentUser();
+
+  const { data: booking } = await supabase
+    .from("carpool_bookings")
+    .select("id, trip_id, seats_booked, status, stripe_payment_intent_id")
+    .eq("id", bookingId)
+    .eq("passenger_id", userId)
+    .maybeSingle();
+
+  if (!booking || booking.status !== "paid") return;
+
+  const { data: trip } = await supabase
+    .from("carpool_trips")
+    .select("driver_id, origin_city, destination_city, departure_date, departure_time")
+    .eq("id", booking.trip_id)
+    .single();
+
+  if (!trip) return;
+
+  // Passé l'heure du départ, il n'y a plus rien à rembourser : la place a été
+  // immobilisée et le conducteur a fait le trajet.
+  const departure = new Date(`${trip.departure_date}T${trip.departure_time}`);
+  if (Number.isFinite(departure.getTime()) && departure.getTime() <= Date.now()) {
+    return;
+  }
+
+  if (!(await refundPaidBooking(supabase, booking))) return;
+
+  const places = `${booking.seats_booked} place${booking.seats_booked > 1 ? "s" : ""}`;
+
+  await createNotification(supabase, {
+    userId: trip.driver_id,
+    type: "carpool_booking_refunded",
+    title: "Un passager s'est désisté",
+    body: `${trip.origin_city} → ${trip.destination_city} — ${places} de nouveau disponible${booking.seats_booked > 1 ? "s" : ""}.`,
+  });
+
+  revalidatePath("/mes-reservations");
+  revalidatePath(`/covoiturage/${booking.trip_id}`);
+  revalidatePath("/covoiturage");
 }

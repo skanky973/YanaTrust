@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyBookings } from "@/lib/carpool/queries";
-import { cancelMyBooking } from "@/lib/actions/carpool";
+import { cancelMyBooking, cancelMyPaidBooking } from "@/lib/actions/carpool";
 
 export const metadata: Metadata = {
   title: "Mes réservations — YanaTrust",
@@ -84,6 +84,19 @@ export default async function MesReservationsPage() {
                   <button type="submit" className="text-xs font-medium text-red-600 underline">
                     Annuler la réservation
                   </button>
+                </form>
+              ) : booking.status === "paid" &&
+                booking.trip &&
+                new Date(
+                  `${booking.trip.departure_date}T${booking.trip.departure_time}`,
+                ) > new Date() ? (
+                <form action={cancelMyPaidBooking.bind(null, booking.id)}>
+                  <button type="submit" className="text-xs font-medium text-red-600 underline">
+                    Me désister et être remboursé
+                  </button>
+                  <p className="mt-1 text-[10px] text-brand-ink/40">
+                    Remboursement intégral jusqu&rsquo;à l&rsquo;heure du départ.
+                  </p>
                 </form>
               ) : null}
             </div>

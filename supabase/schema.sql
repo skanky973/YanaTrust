@@ -2086,10 +2086,16 @@ begin
   end if;
 
   -- auth.uid() vaut null quand la fonction est appelée par le webhook Stripe
-  -- (clé service_role, aucun utilisateur connecté) : c'est le seul autre cas
-  -- autorisé, pour qu'une session de paiement expirée puisse être libérée
-  -- automatiquement. Un utilisateur authentifié ne peut annuler que la sienne.
-  if auth.uid() is not null and v_booking.passenger_id <> auth.uid() then
+  -- (clé service_role, aucun utilisateur connecté) : c'est le cas qui permet de
+  -- libérer automatiquement une session de paiement expirée. Sinon, seuls le
+  -- passager concerné et le conducteur du trajet peuvent annuler — ce dernier
+  -- parce qu'annuler son trajet doit aussi solder les réservations non payées.
+  if auth.uid() is not null
+     and v_booking.passenger_id <> auth.uid()
+     and not exists (
+       select 1 from public.carpool_trips t
+       where t.id = v_booking.trip_id and t.driver_id = auth.uid()
+     ) then
     raise exception 'Non autorisé.';
   end if;
 
@@ -2105,6 +2111,52 @@ $$;
 
 comment on function public.cancel_carpool_booking is 'Annule une réservation non payée et restitue ses places au trajet. Appelable par le passager (via RLS) ou par le webhook Stripe (service_role) en cas d''expiration de la session de paiement.';
 
+-- ----------------------------------------------------------------------------
+-- Remboursement d'une réservation déjà payée : bascule le statut et restitue
+-- les places. Le remboursement de l'argent lui-même est fait côté application
+-- via l'API Stripe AVANT l'appel de cette fonction : on ne marque jamais
+-- "refunded" une réservation dont l'argent n'est pas effectivement reparti.
+-- Autorisé au passager (qui se désiste) comme au conducteur (qui annule son
+-- trajet) ; les policies d'UPDATE de carpool_bookings ne couvrent ni l'un ni
+-- l'autre pour un statut 'paid', d'où le security definer.
+-- ----------------------------------------------------------------------------
+create or replace function public.refund_carpool_booking(p_booking_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_booking record;
+  v_driver_id uuid;
+begin
+  select * into v_booking from public.carpool_bookings where id = p_booking_id for update;
+
+  if v_booking is null or v_booking.status <> 'paid' then
+    return;
+  end if;
+
+  select driver_id into v_driver_id from public.carpool_trips where id = v_booking.trip_id;
+
+  -- auth.uid() vaut null quand l'appel vient du serveur (service_role).
+  if auth.uid() is not null
+     and v_booking.passenger_id <> auth.uid()
+     and v_driver_id is distinct from auth.uid() then
+    raise exception 'Non autorisé.';
+  end if;
+
+  update public.carpool_bookings set status = 'refunded' where id = p_booking_id;
+
+  update public.carpool_trips
+  set
+    seats_available = least(seats_total, seats_available + v_booking.seats_booked),
+    status = case when status = 'full' then 'open' else status end
+  where id = v_booking.trip_id;
+end;
+$$;
+
+comment on function public.refund_carpool_booking is 'Marque une réservation payée comme remboursée et restitue ses places. À n''appeler qu''après un remboursement Stripe effectif.';
+
 -- Le webhook Stripe (service_role, contourne les RLS) notifie conducteur et
 -- passager quand un paiement de covoiturage est confirmé.
 alter table public.notifications drop constraint if exists notifications_type_valid;
@@ -2115,7 +2167,7 @@ alter table public.notifications add constraint notifications_type_valid check (
     'new_application', 'application_accepted', 'application_refused', 'new_message',
     'new_slot_proposal', 'slot_accepted', 'slot_refused', 'modification_requested',
     'provider_proposal', 'booking_confirmed', 'booking_cancelled',
-    'carpool_booking_paid', 'carpool_trip_cancelled'
+    'carpool_booking_paid', 'carpool_trip_cancelled', 'carpool_booking_refunded'
   )
 );
 
