@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ShieldCheck } from "lucide-react";
 import { createBookingCheckout } from "@/lib/actions/carpool";
 import { INITIAL_ACTION_STATE } from "@/lib/actions/action-state";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -52,13 +53,30 @@ export function BookingForm({
         </select>
       </div>
 
-      <p className="text-sm font-semibold text-brand-ink">
-        Total : {(seats * pricePerSeat).toFixed(2)} €
-      </p>
+      {/* Le détail du calcul est affiché, pas seulement le total : personne ne
+          doit avoir à faire la multiplication de tête avant de payer. */}
+      <div className="flex flex-col gap-1 border-t border-brand-ink/5 pt-3">
+        <div className="flex items-center justify-between text-sm text-brand-ink/70">
+          <span>
+            {seats} place{seats > 1 ? "s" : ""} × {pricePerSeat} €
+          </span>
+          <span>{(seats * pricePerSeat).toFixed(2)} €</span>
+        </div>
+        <div className="flex items-center justify-between text-base font-bold text-brand-ink">
+          <span>Total</span>
+          <span>{(seats * pricePerSeat).toFixed(2)} €</span>
+        </div>
+      </div>
 
       <SubmitButton pendingLabel="Redirection vers le paiement...">
         Réserver et payer
       </SubmitButton>
+
+      <p className="flex items-start gap-1.5 text-xs text-brand-ink/65">
+        <ShieldCheck className="mt-px h-4 w-4 shrink-0 text-brand-green" aria-hidden="true" />
+        Paiement sécurisé par Stripe. Remboursement intégral si vous vous
+        désistez avant le départ.
+      </p>
     </form>
   );
 }
