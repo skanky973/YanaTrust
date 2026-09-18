@@ -1595,16 +1595,14 @@ create policy "Participants can update their booking proposals"
 -- ----------------------------------------------------------------------------
 -- notifications : nouveaux types pour candidatures, propositions et messages
 -- ----------------------------------------------------------------------------
+-- La contrainte n'est volontairement PAS recréée ici. Elle l'était avec la
+-- liste connue à la Phase 9, qui ignore les types du covoiturage ajoutés en
+-- Phase 12. Rejouer ce fichier sur une base contenant déjà des notifications
+-- de covoiturage échouait donc à cet endroit précis :
+--   "check constraint notifications_type_valid is violated by some row"
+-- La contrainte intermédiaire était plus étroite que les données réelles.
+-- La liste définitive, qui couvre toutes les phases, est posée en Phase 12.
 alter table public.notifications drop constraint if exists notifications_type_valid;
-alter table public.notifications add constraint notifications_type_valid check (
-  type in (
-    'new_request', 'request_accepted', 'appointment_changed', 'upcoming_intervention',
-    'cancelled', 'completed', 'validation_requested', 'client_validated', 'client_problem',
-    'new_application', 'application_accepted', 'application_refused', 'new_message',
-    'new_slot_proposal', 'slot_accepted', 'slot_refused', 'modification_requested',
-    'provider_proposal', 'booking_confirmed', 'booking_cancelled'
-  )
-);
 
 -- Un participant d'une candidature peut notifier l'autre partie (utilisé par
 -- les actions applicatives : nouvelle candidature, acceptation, refus...).
