@@ -2,7 +2,12 @@
 // plateforme dont l'argument est la confiance, une carte sans visage ni
 // repère visuel reste une ligne de texte anonyme.
 
+// Les tailles sont déclarées ici plutôt que surchargées au cas par cas via
+// className : deux classes Tailwind concurrentes (h-9 et h-6) sont départagées
+// par l'ordre dans la feuille de style, pas par l'ordre dans l'attribut, donc
+// une surcharge locale ne s'applique pas de façon fiable.
 const SIZES = {
+  xs: "h-6 w-6 text-[9px]",
   sm: "h-9 w-9 text-[11px]",
   md: "h-12 w-12 text-sm",
 } as const;
