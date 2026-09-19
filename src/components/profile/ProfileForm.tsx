@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { Camera } from "lucide-react";
 import { updateProfile } from "@/app/profil/modifier/actions";
 import { INITIAL_ACTION_STATE } from "@/lib/actions/action-state";
 import { TextField } from "@/components/ui/TextField";
@@ -15,12 +16,60 @@ export function ProfileForm({ profile }: { profile: ProfileWithPhone }) {
     INITIAL_ACTION_STATE,
   );
 
+  // Aperçu local de la photo choisie, avant tout envoi au serveur : on voit
+  // immédiatement ce qu'on a sélectionné, et on peut corriger si c'est la
+  // mauvaise image.
+  const [apercu, setApercu] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (apercu) URL.revokeObjectURL(apercu);
+    };
+  }, [apercu]);
+
+  const photoAffichee = apercu ?? profile.avatar_url;
+
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {state.error ? <Alert>{state.error}</Alert> : null}
       {state.success ? (
         <Alert variant="success">Profil mis à jour.</Alert>
       ) : null}
+
+      <div className="flex flex-col items-center gap-2">
+        <label className="group relative cursor-pointer">
+          {photoAffichee ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photoAffichee}
+              alt="Votre photo de profil"
+              className="h-24 w-24 rounded-full object-cover"
+            />
+          ) : (
+            <span className="flex h-24 w-24 items-center justify-center rounded-full bg-brand-green/10 text-brand-green-dark">
+              <Camera className="h-8 w-8" aria-hidden="true" />
+            </span>
+          )}
+          <span className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-brand-green-dark text-brand-cream shadow-sm">
+            <Camera className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <input
+            type="file"
+            name="avatar"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              setApercu(file ? URL.createObjectURL(file) : null);
+            }}
+          />
+        </label>
+        <p className="text-center text-xs text-brand-ink/70">
+          {profile.avatar_url
+            ? "Appuyez sur la photo pour la changer"
+            : "Ajoutez une photo : elle est demandée pour publier ou réserver"}
+        </p>
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <TextField

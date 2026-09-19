@@ -47,6 +47,7 @@ export function TripCard({ trip }: { trip: TripWithDriver }) {
         <Avatar
           firstName={trip.driver?.first_name}
           lastName={trip.driver?.last_name}
+          photoUrl={trip.driver?.avatar_url}
           size="sm"
         />
         <div className="min-w-0 flex-1">

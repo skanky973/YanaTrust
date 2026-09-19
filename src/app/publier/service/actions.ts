@@ -5,6 +5,10 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { serviceFormSchema } from "@/lib/validation/service";
 import { uploadServicePhotos } from "@/lib/services/photo-upload";
+import {
+  aUnePhotoDeProfil,
+  AVATAR_REQUIS_MESSAGE,
+} from "@/lib/profiles/require-avatar";
 import type { ActionState } from "@/lib/actions/action-state";
 
 export async function createService(
@@ -31,6 +35,10 @@ export async function createService(
 
   if (!user) {
     return { error: "Vous devez être connecté." };
+  }
+
+  if (!(await aUnePhotoDeProfil(supabase, user.id))) {
+    return { error: AVATAR_REQUIS_MESSAGE };
   }
 
   const { title, category, description, priceFrom, city, serviceArea } =

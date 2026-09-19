@@ -28,14 +28,11 @@ import { createClient } from "@/lib/supabase/server";
 import { RatingBadge } from "@/components/reviews/RatingBadge";
 import { TrustScoreBadge } from "@/components/trust/TrustScoreBadge";
 import { SignOutButton } from "@/components/layout/SignOutButton";
+import { Avatar } from "@/components/ui/Avatar";
 
 export const metadata: Metadata = {
   title: "Mon profil — YanaTrust",
 };
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "?";
-}
 
 export default async function ProfilPage() {
   const profile = await getCurrentProfile();
@@ -95,9 +92,12 @@ export default async function ProfilPage() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-green-dark text-xl font-bold text-brand-cream">
-          {initials(profile.first_name, profile.last_name)}
-        </div>
+        <Avatar
+          firstName={profile.first_name}
+          lastName={profile.last_name}
+          photoUrl={profile.avatar_url}
+          size="lg"
+        />
         <div>
           <div className="flex items-center gap-1.5">
             <h1 className="text-xl font-bold text-brand-ink">

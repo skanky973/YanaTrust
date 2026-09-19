@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { profileUpdateSchema } from "@/lib/validation/profile";
+import { uploadAvatar } from "@/lib/profiles/avatar-upload";
 import type { ActionState } from "@/lib/actions/action-state";
 
 export async function updateProfile(
@@ -36,6 +37,25 @@ export async function updateProfile(
   const { firstName, lastName, phone, city, serviceArea, bio, isProvider } =
     parsed.data;
 
+  // La photo n'est envoyée que si l'utilisateur en a choisi une : un champ
+  // fichier laissé vide arrive comme un File de taille nulle, qu'il ne faut
+  // surtout pas prendre pour une demande de remplacement.
+  const avatarFile = formData.get("avatar");
+  let avatarUrl: string | undefined;
+
+  if (avatarFile instanceof File && avatarFile.size > 0) {
+    const resultat = await uploadAvatar(supabase, {
+      userId: user.id,
+      file: avatarFile,
+    });
+
+    if ("error" in resultat) {
+      return { error: resultat.error };
+    }
+
+    avatarUrl = resultat.url;
+  }
+
   // La ligne ne peut être ciblée que par id = auth.uid() : la policy RLS
   // "Users can update own profile" empêche toute modification d'un autre
   // profil même si cet id venait à être altéré côté client.
@@ -48,6 +68,7 @@ export async function updateProfile(
       service_area: serviceArea || null,
       bio: bio || null,
       is_provider: isProvider,
+      ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
     })
     .eq("id", user.id);
 

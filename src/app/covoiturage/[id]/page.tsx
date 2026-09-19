@@ -121,6 +121,7 @@ export default async function TrajetDetailPage({
             <Avatar
               firstName={trip.driver.first_name}
               lastName={trip.driver.last_name}
+              photoUrl={trip.driver.avatar_url}
               size="md"
             />
             <div className="min-w-0">

@@ -17,6 +17,7 @@ export function RecommendedProviderCard({
       <Avatar
         firstName={provider.first_name}
         lastName={provider.last_name}
+        photoUrl={provider.avatar_url}
         size="md"
       />
       <div className="min-w-0 flex-1">

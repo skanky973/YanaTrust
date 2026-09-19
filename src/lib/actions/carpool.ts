@@ -10,6 +10,10 @@ import { getStripe } from "@/lib/stripe/client";
 import { getSiteUrl } from "@/lib/site-url";
 import { tripFormSchema } from "@/lib/validation/carpool";
 import { createNotification } from "@/lib/notifications/create";
+import {
+  aUnePhotoDeProfil,
+  AVATAR_REQUIS_MESSAGE,
+} from "@/lib/profiles/require-avatar";
 import type { ActionState } from "@/lib/actions/action-state";
 
 // Rembourse effectivement l'argent chez Stripe, puis seulement en cas de
@@ -84,6 +88,10 @@ export async function publishTrip(
   }
 
   const { supabase, userId } = await requireCurrentUser();
+
+  if (!(await aUnePhotoDeProfil(supabase, userId))) {
+    return { error: AVATAR_REQUIS_MESSAGE };
+  }
 
   // Aucune condition de statut prestataire : n'importe quel compte peut
   // proposer un trajet. Seule l'activation des paiements est nécessaire.
@@ -189,7 +197,11 @@ export async function createBookingCheckout(
     return { error: "Nombre de places invalide." };
   }
 
-  const { supabase } = await requireCurrentUser();
+  const { supabase, userId } = await requireCurrentUser();
+
+  if (!(await aUnePhotoDeProfil(supabase, userId))) {
+    return { error: AVATAR_REQUIS_MESSAGE };
+  }
 
   const { data: trip } = await supabase
     .from("carpool_trips")

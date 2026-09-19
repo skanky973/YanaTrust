@@ -60,6 +60,7 @@ export function ServiceCard({
             <Avatar
               firstName={service.provider.first_name}
               lastName={service.provider.last_name}
+              photoUrl={service.provider.avatar_url}
               size="xs"
             />
             <p className="truncate text-xs text-brand-ink/70">

@@ -3,7 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import type { CarpoolTrip, CarpoolBooking, StripeAccount } from "@/lib/supabase/database.types";
 
 export type TripWithDriver = CarpoolTrip & {
-  driver: { id: string; first_name: string; last_name: string } | null;
+  driver: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+  } | null;
 };
 
 export type BookingWithTrip = CarpoolBooking & {
@@ -15,7 +20,7 @@ export type BookingWithPassenger = CarpoolBooking & {
 };
 
 const TRIP_WITH_DRIVER_SELECT =
-  "*, driver:profiles!carpool_trips_driver_id_fkey(id, first_name, last_name)";
+  "*, driver:profiles!carpool_trips_driver_id_fkey(id, first_name, last_name, avatar_url)";
 
 export async function getOpenTrips({
   origin,

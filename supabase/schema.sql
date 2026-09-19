@@ -2182,3 +2182,58 @@ create policy "Carpool participants can notify each other"
          or (b.passenger_id = auth.uid() and t.driver_id = user_id)
     )
   );
+
+-- ============================================================================
+-- Phase 13 : Photo de profil
+-- ============================================================================
+-- profiles.avatar_url existait depuis la Phase 1 mais n'a jamais servi : aucun
+-- moyen d'envoyer une photo n'était en place, et toutes les pastilles de
+-- l'interface affichaient des initiales.
+--
+-- La photo n'est pas exigée à l'inscription, qui reste libre, mais avant les
+-- actions qui engagent quelqu'un d'autre : publier un service, proposer un
+-- trajet, réserver une place. La vérification est faite dans les Server
+-- Actions concernées (voir src/lib/profiles/require-avatar.ts) et non par une
+-- contrainte de colonne, sans quoi les comptes existants deviendraient
+-- immédiatement invalides.
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+-- Lecture publique : une photo de profil est vue par tous ceux qui consultent
+-- une fiche, y compris sans être connecté.
+drop policy if exists "Avatars are publicly readable" on storage.objects;
+create policy "Avatars are publicly readable"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+-- Écriture restreinte à son propre dossier : le premier segment du chemin doit
+-- être l'identifiant de l'utilisateur, faute de quoi n'importe qui pourrait
+-- remplacer la photo d'un autre.
+drop policy if exists "Users can upload own avatar" on storage.objects;
+create policy "Users can upload own avatar"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "Users can replace own avatar" on storage.objects;
+create policy "Users can replace own avatar"
+  on storage.objects for update
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Nécessaire au remplacement : l'ancienne photo est supprimée une fois la
+-- nouvelle envoyée (nom de fichier tiré au hasard pour éviter qu'un cache
+-- affiche encore la précédente).
+drop policy if exists "Users can delete own avatar" on storage.objects;
+create policy "Users can delete own avatar"
+  on storage.objects for delete
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

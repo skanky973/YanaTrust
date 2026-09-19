@@ -6,6 +6,7 @@ export type ServiceWithProvider = Service & {
   provider: {
     first_name: string;
     last_name: string;
+    avatar_url: string | null;
     city: string | null;
   } | null;
 };
@@ -29,7 +30,7 @@ export async function getActiveServices({
 
   let query = supabase
     .from("services")
-    .select("*, provider:profiles!services_provider_id_fkey(first_name, last_name, city)")
+    .select("*, provider:profiles!services_provider_id_fkey(first_name, last_name, avatar_url, city)")
     .eq("status", "active")
     .order("created_at", { ascending: false });
 
@@ -98,7 +99,7 @@ export async function getServiceById(
 
   const { data, error } = await supabase
     .from("services")
-    .select("*, provider:profiles!services_provider_id_fkey(first_name, last_name, city)")
+    .select("*, provider:profiles!services_provider_id_fkey(first_name, last_name, avatar_url, city)")
     .eq("id", id)
     .single();
 
