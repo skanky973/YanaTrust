@@ -1,10 +1,13 @@
 import { z } from "zod";
+// Import relatif et non par alias "@/" : ce module est couvert par des tests
+// exécutés directement par Node, qui ne connaît pas les alias de Next.js.
+import { heureSchema } from "./time.ts";
 
 export const tripFormSchema = z.object({
   originCity: z.string().trim().min(2, "Ville de départ requise.").max(100),
   destinationCity: z.string().trim().min(2, "Ville d'arrivée requise.").max(100),
   departureDate: z.string().trim().min(1, "Date requise."),
-  departureTime: z.string().trim().regex(/^\d{2}:\d{2}$/, "Heure invalide."),
+  departureTime: heureSchema,
   seatsTotal: z
     .string()
     .trim()

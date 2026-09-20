@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { Camera } from "lucide-react";
+import { compresserImage } from "@/lib/images/compress";
 import { updateProfile } from "@/app/profil/modifier/actions";
 import { INITIAL_ACTION_STATE } from "@/lib/actions/action-state";
 import { TextField } from "@/components/ui/TextField";
@@ -58,9 +59,24 @@ export function ProfileForm({ profile }: { profile: ProfileWithPhone }) {
             name="avatar"
             accept="image/jpeg,image/png,image/webp"
             className="sr-only"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              setApercu(file ? URL.createObjectURL(file) : null);
+            onChange={async (e) => {
+              const input = e.target;
+              const file = input.files?.[0];
+
+              if (!file) {
+                setApercu(null);
+                return;
+              }
+
+              // La photo est réduite avant d'être remise dans le champ, si bien
+              // que c'est la version légère qui part au serveur lors de l'envoi
+              // du formulaire.
+              const reduite = await compresserImage(file);
+              const transfert = new DataTransfer();
+              transfert.items.add(reduite);
+              input.files = transfert.files;
+
+              setApercu(URL.createObjectURL(reduite));
             }}
           />
         </label>

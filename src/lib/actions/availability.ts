@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { heureSchema } from "@/lib/validation/time";
 import type { ActionState } from "@/lib/actions/action-state";
 
 async function requireCurrentUser() {
@@ -23,8 +24,8 @@ const weeklySlotSchema = z.object({
     .string()
     .transform((v) => Number(v))
     .refine((v) => Number.isInteger(v) && v >= 0 && v <= 6, "Jour invalide."),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/, "Heure invalide."),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/, "Heure invalide."),
+  startTime: heureSchema,
+  endTime: heureSchema,
 });
 
 export async function addWeeklySlot(

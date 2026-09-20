@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SERVICE_CATEGORIES } from "@/lib/services/categories";
+import { heureSchema } from "@/lib/validation/time";
 
 const CATEGORY_VALUES = SERVICE_CATEGORIES.map((c) => c.value) as [
   string,
@@ -14,7 +15,7 @@ export const proposalFormSchema = z.object({
   clientPhone: z.string().trim().max(30).optional().or(z.literal("")),
   conditions: z.string().trim().max(1000).optional().or(z.literal("")),
   scheduledDate: z.string().trim().min(1, "La date est requise."),
-  startTime: z.string().trim().regex(/^\d{2}:\d{2}$/, "Heure invalide."),
+  startTime: heureSchema,
   durationMinutes: z
     .string()
     .trim()

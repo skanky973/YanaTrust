@@ -51,8 +51,6 @@ export async function getRecommendedProviders(
     const trustScore = computeTrustScore({
       averageRating,
       reviewCount: ratings.length,
-      phoneVerified: provider.phone_verified,
-      identityVerified: provider.identity_verified,
     });
 
     return { ...provider, averageRating, reviewCount: ratings.length, trustScore };

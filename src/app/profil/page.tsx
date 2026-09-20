@@ -135,12 +135,11 @@ export default async function ProfilPage() {
       <dl className="grid grid-cols-1 gap-3 rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-sm">
         <div className="flex justify-between">
           <dt className="text-brand-ink/70">Téléphone</dt>
-          <dd className="font-medium text-brand-ink">
-            {profile.phone || "—"}{" "}
-            {profile.phone && !profile.phone_verified ? (
-              <span className="text-brand-ink/65">(non vérifié)</span>
-            ) : null}
-          </dd>
+          {/* La mention "(non vérifié)" est retirée : aucune procédure de
+              vérification n'existe, donc elle ne pouvait jamais disparaître.
+              Elle laissait croire à un contrôle que personne ne pouvait
+              passer. Elle reviendra avec la vérification par SMS. */}
+          <dd className="font-medium text-brand-ink">{profile.phone || "—"}</dd>
         </div>
         {user?.email ? (
           <div className="flex justify-between">
