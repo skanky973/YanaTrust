@@ -1,7 +1,7 @@
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
 import Link from "next/link";
 
-type Variant = "primary" | "secondary" | "ghost";
+type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   primary:
@@ -10,6 +10,11 @@ const VARIANT_CLASSES: Record<Variant, string> = {
     "bg-brand-gold text-brand-ink hover:brightness-95 disabled:opacity-50",
   ghost:
     "bg-transparent text-brand-green-dark hover:bg-brand-green-dark/10 disabled:opacity-50",
+  // Réservée aux actions irréversibles. La couleur ne porte pas seule
+  // l'avertissement : le libellé du bouton dit lui-même ce qui va se produire,
+  // pour que l'information reste perceptible sans distinguer les couleurs.
+  danger:
+    "bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:hover:bg-red-600",
 };
 
 const BASE_CLASSES =

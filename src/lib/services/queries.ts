@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { sansAccents } from "@/lib/format/accents";
 import type { Service, ServicePhoto } from "@/lib/supabase/database.types";
 
 export type ServiceWithProvider = Service & {
@@ -39,11 +40,22 @@ export async function getActiveServices({
   }
 
   if (search) {
-    query = query.ilike("title", `%${search}%`);
+    // La recherche porte sur la colonne search_text, qui réunit titre,
+    // description et ville en minuscules sans accents. Le terme saisi est
+    // normalisé de la même façon, de sorte que "menage" trouve "Ménage".
+    const terme = sansAccents(search);
+    if (terme) {
+      query = query.ilike("search_text", `%${terme}%`);
+    }
   }
 
   if (city) {
-    query = query.ilike("city", `%${city}%`);
+    // Le filtre par ville passe aussi par search_text : "st laurent" saisi sans
+    // accent ni majuscule doit retrouver "Saint-Laurent-du-Maroni".
+    const ville = sansAccents(city);
+    if (ville) {
+      query = query.ilike("search_text", `%${ville}%`);
+    }
   }
 
   if (minPrice !== undefined) {

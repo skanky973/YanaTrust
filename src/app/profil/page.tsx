@@ -17,6 +17,7 @@ import {
   Car,
   CreditCard,
   Ticket,
+  ShieldCheck,
 } from "lucide-react";
 import { getCurrentProfile } from "@/lib/profiles/queries";
 import { getProviderRatingSummary } from "@/lib/reviews/queries";
@@ -84,6 +85,7 @@ export default async function ProfilPage() {
     { href: "/mes-reservations", label: "Mes réservations", icon: Ticket },
     { href: "/profil/paiements", label: "Paiements", icon: CreditCard },
     { href: "/profil/modifier", label: "Modifier mon profil", icon: Pencil },
+    { href: "/profil/donnees", label: "Mes données", icon: ShieldCheck },
     { href: "/mes-services", label: "Mes services", icon: Wrench },
     { href: "/mes-demandes", label: "Mes demandes", icon: ClipboardList },
     { href: "/favoris", label: "Mes favoris", icon: Heart },

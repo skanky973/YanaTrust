@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { getUnreadNotificationCount } from "@/lib/notifications/queries";
 import "./globals.css";
 
@@ -38,7 +39,21 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={`${poppins.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-brand-cream">
-        <main className="flex flex-1 flex-col pb-24">{children}</main>
+        {/* Lien d'évitement : invisible jusqu'à ce qu'il reçoive le focus, il
+            permet à qui navigue au clavier d'atteindre le contenu sans
+            parcourir toute l'interface. */}
+        <a
+          href="#contenu"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-brand-green-dark focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-cream"
+        >
+          Aller au contenu principal
+        </a>
+        <main id="contenu" className="flex flex-1 flex-col">
+          {children}
+        </main>
+        <div className="pb-24">
+          <SiteFooter />
+        </div>
         <BottomNav unreadCount={unreadCount} />
       </body>
     </html>

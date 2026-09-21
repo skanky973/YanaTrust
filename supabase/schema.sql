@@ -2237,3 +2237,45 @@ create policy "Users can delete own avatar"
     bucket_id = 'avatars'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- ============================================================================
+-- Phase 14 : Recherche insensible aux accents
+-- ============================================================================
+-- La recherche n'interrogeait que le titre, avec ilike : insensible à la casse
+-- mais pas aux accents. Chercher "menage" ne trouvait donc pas "Ménage", et
+-- "electricite" ne trouvait pas "électricité" — or c'est ainsi que la plupart
+-- des gens tapent sur un clavier de téléphone. La description et la ville
+-- n'étaient pas interrogées non plus.
+--
+-- sans_accents() est déclarée immutable et n'utilise que translate(), fonction
+-- native de Postgres : elle peut donc alimenter une colonne générée, ce que ne
+-- permettrait pas l'extension unaccent, dont les fonctions ne sont pas
+-- immutables.
+-- ----------------------------------------------------------------------------
+create or replace function public.sans_accents(txt text)
+returns text
+language sql
+immutable
+strict
+parallel safe
+as $$
+  select translate(
+    lower(txt),
+    'àâäáãåçéèêëíìîïñóòôöõúùûüýÿ',
+    'aaaaaaceeeeiiiinooooouuuuyy'
+  );
+$$;
+
+comment on function public.sans_accents is 'Minuscules sans accents, pour comparer du texte saisi librement. Immutable, donc utilisable dans une colonne générée et dans un index.';
+
+alter table public.services
+  add column if not exists search_text text
+  generated always as (
+    public.sans_accents(
+      coalesce(title, '') || ' ' || coalesce(description, '') || ' ' || coalesce(city, '')
+    )
+  ) stored;
+
+comment on column public.services.search_text is 'Titre, description et ville réunis, en minuscules sans accents. Alimentée automatiquement par Postgres, jamais écrite par l''application.';
+
+create index if not exists services_search_text_idx on public.services (search_text);

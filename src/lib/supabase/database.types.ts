@@ -70,6 +70,13 @@ export type Database = {
           city: string | null;
           service_area: string | null;
           status: string;
+          /**
+           * Colonne générée par Postgres (titre + description + ville, en
+           * minuscules sans accents) : lisible et interrogeable, jamais écrite
+           * par l'application — elle n'apparaît donc ni dans Insert ni dans
+           * Update.
+           */
+          search_text: string;
           created_at: string;
           updated_at: string;
         };

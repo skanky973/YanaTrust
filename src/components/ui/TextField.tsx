@@ -13,8 +13,15 @@ export function TextField({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
+      {/* Les champs facultatifs sont signalés en toutes lettres plutôt que les
+          champs obligatoires par un astérisque : l'astérisque n'a de sens que
+          si une légende l'explique quelque part, et il est annoncé « étoile »
+          par les lecteurs d'écran. */}
       <label htmlFor={name} className="text-sm font-medium text-brand-ink">
         {label}
+        {props.required ? null : (
+          <span className="ml-1 font-normal text-brand-ink/65">(facultatif)</span>
+        )}
       </label>
       <input
         id={name}

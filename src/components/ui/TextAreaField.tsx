@@ -13,8 +13,12 @@ export function TextAreaField({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
+      {/* Même règle que TextField : on nomme ce qui est facultatif. */}
       <label htmlFor={name} className="text-sm font-medium text-brand-ink">
         {label}
+        {props.required ? null : (
+          <span className="ml-1 font-normal text-brand-ink/65">(facultatif)</span>
+        )}
       </label>
       <textarea
         id={name}
