@@ -143,7 +143,14 @@ export default async function TrajetDetailPage({
         </div>
       ) : null}
 
-      {!user ? (
+      {/* La suspension est annoncée avant tout le reste, y compris avant
+          l'invitation à se connecter : inviter quelqu'un à créer un compte
+          pour une action indisponible serait une perte de temps déguisée. */}
+      {!paiementCovoiturageActif() ? (
+        <p className="rounded-xl bg-brand-gold/15 p-4 text-sm text-brand-ink/80">
+          {COVOITURAGE_DESACTIVE_MESSAGE}
+        </p>
+      ) : !user ? (
         <p className="rounded-xl bg-white shadow-sm shadow-black/5 p-4 text-center text-sm text-brand-ink/70">
           Connectez-vous pour réserver une place.
         </p>
@@ -163,13 +170,6 @@ export default async function TrajetDetailPage({
             {myBooking.price_total} €
           </p>
         </div>
-      ) : !paiementCovoiturageActif() ? (
-        /* L'interdiction est appliquée dans createBookingCheckout ; ce bloc
-           ne fait que l'expliquer, plutôt que de laisser un bouton qui
-           échouerait au dernier moment. */
-        <p className="rounded-xl bg-brand-gold/15 p-4 text-sm text-brand-ink/80">
-          {COVOITURAGE_DESACTIVE_MESSAGE}
-        </p>
       ) : trip.status === "open" ? (
         <BookingForm
           tripId={trip.id}
