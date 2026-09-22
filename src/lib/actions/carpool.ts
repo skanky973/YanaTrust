@@ -14,6 +14,10 @@ import {
   aUnePhotoDeProfil,
   AVATAR_REQUIS_MESSAGE,
 } from "@/lib/profiles/require-avatar";
+import {
+  paiementCovoiturageActif,
+  COVOITURAGE_DESACTIVE_MESSAGE,
+} from "@/lib/config/features";
 import type { ActionState } from "@/lib/actions/action-state";
 
 // Rembourse effectivement l'argent chez Stripe, puis seulement en cas de
@@ -195,6 +199,12 @@ export async function createBookingCheckout(
   const seats = Number(formData.get("seats"));
   if (!Number.isInteger(seats) || seats < 1) {
     return { error: "Nombre de places invalide." };
+  }
+
+  // Contrôle placé avant tout le reste : c'est ici que l'argent commence à
+  // circuler, et masquer le bouton dans la page ne protégerait de rien.
+  if (!paiementCovoiturageActif()) {
+    return { error: COVOITURAGE_DESACTIVE_MESSAGE };
   }
 
   const { supabase, userId } = await requireCurrentUser();

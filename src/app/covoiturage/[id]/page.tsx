@@ -8,6 +8,10 @@ import { getTripById, getMyBookingForTrip } from "@/lib/carpool/queries";
 import { BookingForm } from "@/components/carpool/BookingForm";
 import { Avatar } from "@/components/ui/Avatar";
 import { Alert } from "@/components/ui/Alert";
+import {
+  paiementCovoiturageActif,
+  COVOITURAGE_DESACTIVE_MESSAGE,
+} from "@/lib/config/features";
 
 export async function generateMetadata({
   params,
@@ -159,6 +163,13 @@ export default async function TrajetDetailPage({
             {myBooking.price_total} €
           </p>
         </div>
+      ) : !paiementCovoiturageActif() ? (
+        /* L'interdiction est appliquée dans createBookingCheckout ; ce bloc
+           ne fait que l'expliquer, plutôt que de laisser un bouton qui
+           échouerait au dernier moment. */
+        <p className="rounded-xl bg-brand-gold/15 p-4 text-sm text-brand-ink/80">
+          {COVOITURAGE_DESACTIVE_MESSAGE}
+        </p>
       ) : trip.status === "open" ? (
         <BookingForm
           tripId={trip.id}
