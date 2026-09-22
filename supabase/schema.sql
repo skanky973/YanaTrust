@@ -2279,3 +2279,121 @@ alter table public.services
 comment on column public.services.search_text is 'Titre, description et ville réunis, en minuscules sans accents. Alimentée automatiquement par Postgres, jamais écrite par l''application.';
 
 create index if not exists services_search_text_idx on public.services (search_text);
+
+-- ============================================================================
+-- Phase 15 : Correctifs de securite et de fiabilite avant la beta
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- FUITE : les demandes ouvertes etaient lisibles par n'importe qui
+-- ----------------------------------------------------------------------------
+-- La policy de la Phase 9 s'intitule "Providers can view open requests", mais
+-- sa condition ne verifiait ni l'authentification, ni le statut prestataire :
+-- « status = 'open' » suffisait. Un visiteur non connecte pouvait donc lire,
+-- via l'API REST, le titre, la description, le budget, la ville, la date
+-- souhaitee et l'identifiant du client de toutes les demandes ouvertes.
+--
+-- Verifie par une requete anonyme le 22/09/2026 : la demande « transport de
+-- meuble », budget 150 EUR, datee, avec l'identifiant de son auteur — lequel
+-- renvoie a un profil public portant nom et photo. Dans une commune de la
+-- taille de Saint-Laurent, cela revient a publier qu'une personne identifiee
+-- sera absente de chez elle tel jour avec telle somme a depenser.
+--
+-- La policy exige desormais un compte connecte ET le statut prestataire, ce
+-- qui correspond a son intitule et au seul usage prevu (la page /demandes,
+-- accessible aux seuls prestataires). Le client continue de voir ses propres
+-- demandes par la policy "Users can view own requests", les policies se
+-- combinant avec OR.
+-- ----------------------------------------------------------------------------
+drop policy if exists "Providers can view open requests or ones they applied to" on public.requests;
+create policy "Providers can view open requests or ones they applied to"
+  on public.requests for select
+  using (
+    auth.uid() is not null
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_provider = true
+    )
+    and (
+      status = 'open'
+      or public.has_applied_to_request(requests.id)
+    )
+  );
+
+-- ----------------------------------------------------------------------------
+-- FIABILITE : un passager pouvait immobiliser plusieurs fois les memes places
+-- ----------------------------------------------------------------------------
+-- create_carpool_booking ne verifiait pas si le passager avait deja une
+-- reservation en cours sur ce trajet. Revenir en arriere puis reserver de
+-- nouveau, ou ouvrir deux onglets, creait donc deux reservations : deux fois
+-- les places retirees de la vente, et deux paiements possibles pour le meme
+-- voyage. Le bouton se desactive pendant l'envoi, mais c'est une protection
+-- d'interface, qui ne vaut rien face a une requete envoyee directement.
+--
+-- La verification est faite sous le meme verrou de ligne que la decrementation
+-- des places, donc deux requetes simultanees ne peuvent pas la contourner.
+-- ----------------------------------------------------------------------------
+create or replace function public.create_carpool_booking(p_trip_id uuid, p_seats integer)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_trip record;
+  v_price_total numeric(10, 2);
+  v_platform_fee numeric(10, 2);
+  v_booking_id uuid;
+begin
+  if p_seats is null or p_seats < 1 then
+    raise exception 'Nombre de places invalide.';
+  end if;
+
+  select * into v_trip from public.carpool_trips where id = p_trip_id for update;
+
+  if v_trip is null then
+    raise exception 'Trajet introuvable.';
+  end if;
+
+  if v_trip.driver_id = auth.uid() then
+    raise exception 'Vous ne pouvez pas réserver votre propre trajet.';
+  end if;
+
+  if v_trip.status <> 'open' then
+    raise exception 'Ce trajet n''accepte plus de réservations.';
+  end if;
+
+  -- Sous le verrou pose ci-dessus : une seconde requete simultanee attendra
+  -- la fin de celle-ci et verra donc la reservation qu'elle vient de creer.
+  if exists (
+    select 1 from public.carpool_bookings b
+    where b.trip_id = p_trip_id
+      and b.passenger_id = auth.uid()
+      and b.status in ('pending_payment', 'paid')
+  ) then
+    raise exception 'Vous avez déjà une réservation en cours sur ce trajet.';
+  end if;
+
+  if v_trip.seats_available < p_seats then
+    raise exception 'Il ne reste pas assez de places sur ce trajet.';
+  end if;
+
+  v_price_total := v_trip.price_per_seat * p_seats;
+  v_platform_fee := round(v_price_total * 0.10, 2);
+
+  update public.carpool_trips
+  set
+    seats_available = seats_available - p_seats,
+    status = case when seats_available - p_seats <= 0 then 'full' else status end
+  where id = p_trip_id;
+
+  insert into public.carpool_bookings (
+    trip_id, passenger_id, seats_booked, price_total, platform_fee, status
+  ) values (
+    p_trip_id, auth.uid(), p_seats, v_price_total, v_platform_fee, 'pending_payment'
+  )
+  returning id into v_booking_id;
+
+  return v_booking_id;
+end;
+$$;

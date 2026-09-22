@@ -240,12 +240,15 @@ export async function createBookingCheckout(
   );
 
   if (rpcError || !bookingId) {
+    const message = rpcError?.message ?? "";
     return {
-      error: rpcError?.message.includes("places")
-        ? "Il ne reste pas assez de places sur ce trajet."
-        : rpcError?.message.includes("propre trajet")
-          ? "Vous ne pouvez pas réserver votre propre trajet."
-          : "Impossible de créer la réservation.",
+      error: message.includes("déjà une réservation")
+        ? "Vous avez déjà une réservation en cours sur ce trajet. Retrouvez-la dans « Mes réservations »."
+        : message.includes("places")
+          ? "Il ne reste pas assez de places sur ce trajet."
+          : message.includes("propre trajet")
+            ? "Vous ne pouvez pas réserver votre propre trajet."
+            : "Impossible de créer la réservation.",
     };
   }
 
